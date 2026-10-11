@@ -1,0 +1,220 @@
+services:
+  # ==================================================
+  # PostgreSQL Database (7 Databases)
+  # ==================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: polyglot-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./database/bootstrap.sql:/docker-entrypoint-initdb.d/01-bootstrap.sql:ro
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - polyglot-network
+
+  # ==================================================
+  # 1. Auth Service (Java / Spring Boot - Port 8081)
+  # ==================================================
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    container_name: auth-service
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      AUTH_DB_URL: jdbc:postgresql://postgres:5432/auth_db
+      DB_USER: microapp
+      DB_PASSWORD: microapp123
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - polyglot-network
+
+  # ==================================================
+  # 2. Catalog Service (Go - Port 8082)
+  # ==================================================
+  catalog-service:
+    build:
+      context: ./services/catalog-service
+      dockerfile: Dockerfile
+    container_name: catalog-service
+    restart: unless-stopped
+    ports:
+      - "8082:8082"
+    environment:
+      CATALOG_DB_DSN: postgres://microapp:microapp123@postgres:5432/catalog_db?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - polyglot-network
+
+  # ==================================================
+  # 3. Inventory Service (Node.js - Port 8083)
+  # ==================================================
+  inventory-service:
+    build:
+      context: ./services/inventory-service
+      dockerfile: Dockerfile
+    container_name: inventory-service
+    restart: unless-stopped
+    ports:
+      - "8083:8083"
+    environment:
+      INVENTORY_DB_URL: postgres://microapp:microapp123@postgres:5432/inventory_db
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - polyglot-network
+
+  # ==================================================
+  # 4. Notification Service (Ruby - Port 8086)
+  # ==================================================
+  notification-service:
+    build:
+      context: ./services/notification-service
+      dockerfile: Dockerfile
+    container_name: notification-service
+    restart: unless-stopped
+    ports:
+      - "8086:8086"
+    environment:
+      NOTIFICATION_DB_URL: postgres://microapp:microapp123@postgres:5432/notification_db
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - polyglot-network
+
+  # ==================================================
+  # 5. Order Service (Python / FastAPI - Port 8084)
+  # ==================================================
+  order-service:
+    build:
+      context: ./services/order-service
+      dockerfile: Dockerfile
+    container_name: order-service
+    restart: unless-stopped
+    ports:
+      - "8084:8084"
+    environment:
+      ORDER_DB_DSN: dbname=order_db user=microapp password=microapp123 host=postgres port=5432
+      CATALOG_URL: http://catalog-service:8082
+      INVENTORY_URL: http://inventory-service:8083
+      NOTIFICATION_URL: http://notification-service:8086
+    depends_on:
+      postgres:
+        condition: service_healthy
+      catalog-service:
+        condition: service_started
+      inventory-service:
+        condition: service_started
+      notification-service:
+        condition: service_started
+    networks:
+      - polyglot-network
+
+  # ==================================================
+  # 6. Payment Service (C# / .NET 8 - Port 8085)
+  # ==================================================
+  payment-service:
+    build:
+      context: ./services/payment-service
+      dockerfile: Dockerfile
+    container_name: payment-service
+    restart: unless-stopped
+    ports:
+      - "8085:8085"
+    environment:
+      PAYMENT_DB_URL: Host=postgres;Port=5432;Database=payment_db;Username=microapp;Password=microapp123
+      ORDER_URL: http://order-service:8084
+      INVENTORY_URL: http://inventory-service:8083
+      NOTIFICATION_URL: http://notification-service:8086
+    depends_on:
+      postgres:
+        condition: service_healthy
+      order-service:
+        condition: service_started
+      inventory-service:
+        condition: service_started
+      notification-service:
+        condition: service_started
+    networks:
+      - polyglot-network
+
+  # ==================================================
+  # 7. Analytics Service (PHP - Port 8087)
+  # ==================================================
+  analytics-service:
+    build:
+      context: ./services/analytics-service
+      dockerfile: Dockerfile
+    container_name: analytics-service
+    restart: unless-stopped
+    ports:
+      - "8087:8087"
+    environment:
+      ANALYTICS_DB_DSN: pgsql:host=postgres;port=5432;dbname=analytics_db
+      DB_USER: microapp
+      DB_PASSWORD: microapp123
+      CATALOG_URL: http://catalog-service:8082
+      INVENTORY_URL: http://inventory-service:8083
+      ORDER_URL: http://order-service:8084
+      PAYMENT_URL: http://payment-service:8085
+    depends_on:
+      postgres:
+        condition: service_healthy
+      catalog-service:
+        condition: service_started
+      inventory-service:
+        condition: service_started
+      order-service:
+        condition: service_started
+      payment-service:
+        condition: service_started
+    networks:
+      - polyglot-network
+
+  # ==================================================
+  # Frontend Web UI (React + Nginx - Port 5173 / 80)
+  # ==================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: polyglot-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+      - "80:80"
+    depends_on:
+      - auth-service
+      - catalog-service
+      - inventory-service
+      - order-service
+      - payment-service
+      - notification-service
+      - analytics-service
+    networks:
+      - polyglot-network
+
+volumes:
+  postgres-data:
+
+networks:
+  polyglot-network:
+    driver: bridge
