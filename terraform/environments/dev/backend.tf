@@ -3,7 +3,7 @@
 # Only the S3 bucket must exist first (bootstrap once, out of band). `use_lockfile`
 # makes the S3 backend hold the lock as a `.tflock` object via conditional writes.
 # For offline validation we run `terraform init -backend=false`, so this block is
-# inert until you configure and init with a real backend.
+# insert until you configure and init with a real backend.
 terraform {
   backend "s3" {
     bucket       = "ecommerce-bucket-877013879278-us-east-1-an" # create once, then set here

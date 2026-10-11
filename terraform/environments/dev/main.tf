@@ -42,11 +42,7 @@ module "ecr" {
   repository_name = var.ecr_repository_name
 }
 
-module "s3_documents" {
-  source = "../../modules/s3"
 
-  bucket_name = "${var.name}-documents-${data.aws_caller_identity.current.account_id}"
-}
 
 module "acm" {
   source = "../../modules/acm"
