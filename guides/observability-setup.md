@@ -147,3 +147,4 @@ env:
   - name: OTEL_SERVICE_NAME
     value: "order-service" # (Use the service's name)
 ```
+
