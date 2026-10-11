@@ -17,7 +17,7 @@ spec:
       containers:
         - name: frontend
           # Replace with your ECR image URI, e.g. <aws_account_id>.dkr.ecr.<region>.amazonaws.com/frontend:latest
-          image: frontend:latest
+          image: 877013879278.dkr.ecr.us-east-1.amazonaws.com/ecommerce-platform:frontend
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80

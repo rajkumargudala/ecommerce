@@ -17,7 +17,7 @@ spec:
       containers:
         - name: analytics-service
           # Replace with your ECR image URI, e.g. <aws_account_id>.dkr.ecr.<region>.amazonaws.com/analytics-service:latest
-          image: analytics-service:latest
+          image: 877013879278.dkr.ecr.us-east-1.amazonaws.com/ecommerce-platform:analytics-service
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8087

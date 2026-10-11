@@ -17,7 +17,7 @@ spec:
       containers:
         - name: notification-service
           # Replace with your ECR image URI, e.g. <aws_account_id>.dkr.ecr.<region>.amazonaws.com/notification-service:latest
-          image: notification-service:latest
+          image: 877013879278.dkr.ecr.us-east-1.amazonaws.com/ecommerce-platform:notification-service
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8086

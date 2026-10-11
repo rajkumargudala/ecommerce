@@ -17,7 +17,7 @@ spec:
       containers:
         - name: order-service
           # Replace with your ECR image URI, e.g. <aws_account_id>.dkr.ecr.<region>.amazonaws.com/order-service:latest
-          image: order-service:latest
+          image: 877013879278.dkr.ecr.us-east-1.amazonaws.com/ecommerce-platform:order-service
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8084
