@@ -27,7 +27,7 @@ postgres:
 
 auth:
   enabled: true
-  tag: auth-service-6da253c9634c2df675d35d97ed2d67958616ea81
+  tag: auth-service-c74724a6a864dcaffd2ad86d7642021dc2c7df16
   replicaCount: 1
   service:
     port: 8081
@@ -41,7 +41,7 @@ auth:
 
 catalog:
   enabled: true
-  tag: catalog-service-6da253c9634c2df675d35d97ed2d67958616ea81
+  tag: catalog-service-c74724a6a864dcaffd2ad86d7642021dc2c7df16
   replicaCount: 1
   service:
     port: 8082
@@ -55,7 +55,7 @@ catalog:
 
 inventory:
   enabled: true
-  tag: inventory-service-6da253c9634c2df675d35d97ed2d67958616ea81
+  tag: inventory-service-c74724a6a864dcaffd2ad86d7642021dc2c7df16
   replicaCount: 1
   service:
     port: 8083
@@ -69,7 +69,7 @@ inventory:
 
 order:
   enabled: true
-  tag: order-service-6da253c9634c2df675d35d97ed2d67958616ea81
+  tag: order-service-c74724a6a864dcaffd2ad86d7642021dc2c7df16
   replicaCount: 1
   service:
     port: 8084
@@ -83,7 +83,7 @@ order:
 
 payment:
   enabled: true
-  tag: payment-service-6da253c9634c2df675d35d97ed2d67958616ea81
+  tag: payment-service-c74724a6a864dcaffd2ad86d7642021dc2c7df16
   replicaCount: 1
   service:
     port: 8085
@@ -97,7 +97,7 @@ payment:
 
 notification:
   enabled: true
-  tag: notification-service-6da253c9634c2df675d35d97ed2d67958616ea81
+  tag: notification-service-c74724a6a864dcaffd2ad86d7642021dc2c7df16
   replicaCount: 1
   service:
     port: 8086
@@ -111,7 +111,7 @@ notification:
 
 analytics:
   enabled: true
-  tag: analytics-service-6da253c9634c2df675d35d97ed2d67958616ea81
+  tag: analytics-service-c74724a6a864dcaffd2ad86d7642021dc2c7df16
   replicaCount: 1
   service:
     port: 8087
@@ -125,7 +125,7 @@ analytics:
 
 frontend:
   enabled: true
-  tag: frontend-6da253c9634c2df675d35d97ed2d67958616ea81
+  tag: frontend-c74724a6a864dcaffd2ad86d7642021dc2c7df16
   replicaCount: 1
   service:
     type: LoadBalancer
