@@ -227,7 +227,7 @@ export default function App() {
 
       {tab==="overview"&&<>
         <section className="hero card">
-          <div><Pill tone="blue">POLYGLOT MICROSERVICES</Pill><h2>Seven independent backends.<br/>One seamless product.</h2>
+          <div><Pill tone="blue">Ecommerce MICROSERVICES</Pill><h2>Seven independent backends.<br/>One seamless product.</h2>
           <p>Every backend owns its data and communicates over REST. Run the entire platform directly on your machine.</p>
           <div className="actions"><button className="primary" onClick={()=>setTab("catalog")}>Browse products →</button><button className="secondary" onClick={()=>setTab("analytics")}>View analytics</button></div></div>
           <div className="orb"><b>REST</b>{["Java","Go","Node","Python","C#","Ruby","PHP"].map((x,i)=><span key={x} style={{"--i":i}}>{x}</span>)}</div>

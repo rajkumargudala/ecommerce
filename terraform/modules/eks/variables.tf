@@ -6,7 +6,7 @@ variable "cluster_name" {
 variable "cluster_version" {
   description = "Kubernetes version."
   type        = string
-  default     = "1.31"
+  default     = "1.35"
 }
 
 variable "vpc_id" {
@@ -32,7 +32,7 @@ variable "node_role_arn" {
 variable "node_instance_types" {
   description = "Instance types for the managed node group."
   type        = list(string)
-  default     = ["t3.large"]
+  default     = ["m7i-flex.large"]
 }
 
 variable "node_min_size" {
@@ -42,7 +42,7 @@ variable "node_min_size" {
 
 variable "node_max_size" {
   type    = number
-  default = 5
+  default = 6
 }
 
 variable "node_desired_size" {

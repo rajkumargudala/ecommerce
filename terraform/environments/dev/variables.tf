@@ -13,13 +13,13 @@ variable "environment" {
 variable "name" {
   description = "Resource name prefix."
   type        = string
-  default     = "banking-dev"
+  default     = "ecommerce-dev"
 }
 
 variable "cluster_name" {
   description = "EKS cluster name."
   type        = string
-  default     = "banking-dev"
+  default     = "ecommerce-cluster-dev"
 }
 
 variable "vpc_cidr" {
@@ -59,30 +59,30 @@ variable "cluster_version" {
 }
 
 variable "node_instance_types" {
-  description = "Managed node group instance types. t3.xlarge (4 vCPU/16 GB) fits the full stack (32 app pods + Postgres/Kafka/Redis + kube-prometheus-stack + Loki + Tempo + OTel + Argo CD)."
+  description = "Managed node group instance types. "
   type        = list(string)
   default     = ["m7i-flex.large"]
 }
 
 variable "node_min_size" {
   type    = number
-  default = 3
+  default = 2
 }
 
 variable "node_max_size" {
   type    = number
-  default = 8
+  default = 6
 }
 
 variable "node_desired_size" {
   type    = number
-  default = 4
+  default = 3
 }
 
 variable "ecr_repository_name" {
   description = "Single ECR repository holding all service images."
   type        = string
-  default     = "banking-platform"
+  default     = "ecommerce-platform"
 }
 
 variable "domain_name" {

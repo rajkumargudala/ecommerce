@@ -6,7 +6,7 @@
 # inert until you configure and init with a real backend.
 terraform {
   backend "s3" {
-    bucket       = "banking-platform-tfstate-877013879278-us-east-1-an" # create once, then set here
+    bucket       = "ecommerce-bucket-877013879278-us-east-1-an" # create once, then set here
     key          = "dev/networking.tfstate"
     region       = "us-east-1"
     use_lockfile = true

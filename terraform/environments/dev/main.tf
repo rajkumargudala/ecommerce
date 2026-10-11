@@ -55,7 +55,7 @@ module "acm" {
   subject_alternative_names = ["*.${var.domain_name}"]
   tags = {
     Environment = "dev"
-    Project     = "banking-platform"
+    Project     = "ecommerce-platform"
     ManagedBy   = "terraform"
   }
 }
