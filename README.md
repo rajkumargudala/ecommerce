@@ -13,6 +13,7 @@ Choose your deployment mode based on your environment:
 | 🐳 **Docker & Compose** | Containerized Local / Test Host | Multi-stage Dockerfiles + `docker-compose.yml` (9 coordinated containers) | [guides/docker-setup.md](guides/docker-setup.md) |
 | ☸️ **Raw Kubernetes Manifests** | EKS / Minikube / Kind | Traditional YAML in `k8s/` + Kustomize (`kubectl apply -k k8s/`) + EBS CSI | [guides/kubernetes-manifests.md](guides/kubernetes-manifests.md) |
 | 🚀 **CI/CD, Helm & ArgoCD** | AWS EKS Enterprise Production | Helm (`helm/ecommerce`) + GitHub Actions CI + ECR + ArgoCD GitOps | [guides/cicd-helm-argocd.md](guides/cicd-helm-argocd.md) |
+| 📊 **Full-Stack Observability** | AWS EKS Addons | Prometheus, Grafana, Loki, Tempo, OpenTelemetry in Terraform | [guides/observability-setup.md](guides/observability-setup.md) |
 
 ## Architecture
 

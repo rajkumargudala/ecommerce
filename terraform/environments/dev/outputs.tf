@@ -53,6 +53,37 @@ output "addons_argocd" {
   description = "Helm release name for ArgoCD."
 }
 
+output "observability_namespace" {
+  value       = var.enable_addons && var.enable_observability ? module.addons[0].observability_namespace : null
+  description = "Kubernetes namespace housing the observability suite."
+}
+
+output "observability_grafana_url" {
+  value       = var.enable_addons && var.enable_observability ? module.addons[0].grafana_service_url : null
+  description = "Internal service URL for Grafana UI."
+}
+
+output "observability_prometheus_url" {
+  value       = var.enable_addons && var.enable_observability ? module.addons[0].prometheus_service_url : null
+  description = "Internal service URL for Prometheus server."
+}
+
+output "observability_loki_url" {
+  value       = var.enable_addons && var.enable_observability ? module.addons[0].loki_service_url : null
+  description = "Internal service URL for Loki log aggregation."
+}
+
+output "observability_tempo_endpoint" {
+  value       = var.enable_addons && var.enable_observability ? module.addons[0].tempo_otlp_grpc_endpoint : null
+  description = "Internal OTLP gRPC endpoint for Tempo distributed tracing."
+}
+
+output "observability_opentelemetry_collector_endpoint" {
+  value       = var.enable_addons && var.enable_observability ? module.addons[0].opentelemetry_collector_otlp_grpc_endpoint : null
+  description = "Internal OTLP gRPC endpoint for OpenTelemetry Collector."
+}
+
+
 
 
 

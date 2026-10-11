@@ -67,6 +67,8 @@ module "addons" {
   load_balancer_controller_irsa_role_arn = module.eks.load_balancer_controller_irsa_role_arn
   region                                 = var.region
   vpc_id                                 = module.vpc.vpc_id
+  enable_observability                   = var.enable_observability
 }
+
 
 
