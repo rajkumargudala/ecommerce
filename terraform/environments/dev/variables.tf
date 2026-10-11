@@ -91,3 +91,10 @@ variable "domain_name" {
   default     = "learnwithmedevops.online"
 }
 
+variable "enable_addons" {
+  description = "Whether to deploy Kubernetes/Helm addons (gp3 StorageClass, AWS Load Balancer Controller, ArgoCD)."
+  type        = bool
+  default     = false # Kept false by default to prevent altering existing live resources; enable when deploying next time
+}
+
+

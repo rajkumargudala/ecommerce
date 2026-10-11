@@ -34,10 +34,6 @@ output "ecr_repository_url" {
   value = module.ecr.repository_url
 }
 
-output "documents_bucket" {
-  value = module.s3_documents.bucket_name
-}
-
 output "load_balancer_controller_irsa_role_arn" {
   value = module.eks.load_balancer_controller_irsa_role_arn
 }
@@ -46,6 +42,17 @@ output "acm_certificate_arn" {
   value       = module.acm.certificate_arn
   description = "The ARN of the ACM certificate for learnwithmedevops.online"
 }
+
+output "addons_aws_load_balancer_controller" {
+  value       = var.enable_addons ? module.addons[0].aws_load_balancer_controller_release_name : null
+  description = "Helm release name for AWS Load Balancer Controller."
+}
+
+output "addons_argocd" {
+  value       = var.enable_addons ? module.addons[0].argocd_release_name : null
+  description = "Helm release name for ArgoCD."
+}
+
 
 
 

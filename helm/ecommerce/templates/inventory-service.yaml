@@ -1,0 +1,19 @@
+{{- if .Values.inventory.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: inventory-service
+  labels:
+    app: inventory-service
+    {{- include "ecommerce.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.inventory.service.port }}
+      targetPort: {{ .Values.inventory.service.port }}
+      protocol: TCP
+      name: http
+  selector:
+    app: inventory-service
+{{- end }}
+

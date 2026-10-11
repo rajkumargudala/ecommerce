@@ -1,0 +1,19 @@
+{{- if .Values.catalog.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: catalog-service
+  labels:
+    app: catalog-service
+    {{- include "ecommerce.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.catalog.service.port }}
+      targetPort: {{ .Values.catalog.service.port }}
+      protocol: TCP
+      name: http
+  selector:
+    app: catalog-service
+{{- end }}
+

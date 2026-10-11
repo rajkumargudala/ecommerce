@@ -1,0 +1,29 @@
+{{- if .Values.postgres.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init-scripts
+  labels:
+    app: postgres
+    {{- include "ecommerce.labels" . | nindent 4 }}
+data:
+  init.sql: |
+    DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='{{ .Values.postgres.dbUser }}') THEN
+        CREATE ROLE {{ .Values.postgres.dbUser }} LOGIN PASSWORD '{{ .Values.postgres.dbPassword }}';
+      ELSE
+        ALTER ROLE {{ .Values.postgres.dbUser }} WITH LOGIN PASSWORD '{{ .Values.postgres.dbPassword }}';
+      END IF;
+    END
+    $$;
+
+    CREATE DATABASE auth_db OWNER {{ .Values.postgres.dbUser }};
+    CREATE DATABASE catalog_db OWNER {{ .Values.postgres.dbUser }};
+    CREATE DATABASE inventory_db OWNER {{ .Values.postgres.dbUser }};
+    CREATE DATABASE order_db OWNER {{ .Values.postgres.dbUser }};
+    CREATE DATABASE payment_db OWNER {{ .Values.postgres.dbUser }};
+    CREATE DATABASE notification_db OWNER {{ .Values.postgres.dbUser }};
+    CREATE DATABASE analytics_db OWNER {{ .Values.postgres.dbUser }};
+{{- end }}
+

@@ -1,0 +1,19 @@
+{{- if .Values.payment.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-service
+  labels:
+    app: payment-service
+    {{- include "ecommerce.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.payment.service.port }}
+      targetPort: {{ .Values.payment.service.port }}
+      protocol: TCP
+      name: http
+  selector:
+    app: payment-service
+{{- end }}
+

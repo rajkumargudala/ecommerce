@@ -56,3 +56,17 @@ module "acm" {
   }
 }
 
+module "addons" {
+  source = "../../modules/addons"
+
+  count = var.enable_addons ? 1 : 0
+
+  cluster_name                           = module.eks.cluster_name
+  cluster_endpoint                       = module.eks.cluster_endpoint
+  cluster_certificate_authority_data     = module.eks.cluster_certificate_authority_data
+  load_balancer_controller_irsa_role_arn = module.eks.load_balancer_controller_irsa_role_arn
+  region                                 = var.region
+  vpc_id                                 = module.vpc.vpc_id
+}
+
+

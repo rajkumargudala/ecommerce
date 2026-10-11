@@ -1,0 +1,19 @@
+{{- if .Values.order.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-service
+  labels:
+    app: order-service
+    {{- include "ecommerce.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.order.service.port }}
+      targetPort: {{ .Values.order.service.port }}
+      protocol: TCP
+      name: http
+  selector:
+    app: order-service
+{{- end }}
+

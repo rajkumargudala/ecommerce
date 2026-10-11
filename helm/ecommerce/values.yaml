@@ -1,0 +1,147 @@
+# Default values for ecommerce microservices application.
+global:
+  imageRegistry: 877013879278.dkr.ecr.us-east-1.amazonaws.com
+  imageRepository: ecommerce-platform
+  imagePullPolicy: IfNotPresent
+
+postgres:
+  enabled: true
+  image:
+    repository: postgres
+    tag: "16-alpine"
+    pullPolicy: IfNotPresent
+  user: postgres
+  password: postgres
+  dbUser: microapp
+  dbPassword: microapp123
+  storage:
+    size: 10Gi
+    storageClassName: gp3
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+auth:
+  enabled: true
+  tag: auth-service
+  replicaCount: 1
+  service:
+    port: 8081
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1024Mi
+
+catalog:
+  enabled: true
+  tag: catalog-service
+  replicaCount: 1
+  service:
+    port: 8082
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
+inventory:
+  enabled: true
+  tag: inventory-service
+  replicaCount: 1
+  service:
+    port: 8083
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
+order:
+  enabled: true
+  tag: order-service
+  replicaCount: 1
+  service:
+    port: 8084
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
+payment:
+  enabled: true
+  tag: payment-service
+  replicaCount: 1
+  service:
+    port: 8085
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
+notification:
+  enabled: true
+  tag: notification-service
+  replicaCount: 1
+  service:
+    port: 8086
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
+analytics:
+  enabled: true
+  tag: analytics-service
+  replicaCount: 1
+  service:
+    port: 8087
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
+frontend:
+  enabled: true
+  tag: frontend
+  replicaCount: 1
+  service:
+    type: LoadBalancer
+    port: 80
+  ingress:
+    enabled: true
+    className: alb
+    annotations:
+      alb.ingress.kubernetes.io/scheme: internet-facing
+      alb.ingress.kubernetes.io/target-type: ip
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
