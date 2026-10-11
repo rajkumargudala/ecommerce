@@ -1,6 +1,18 @@
 # DevOps Shack Polyglot Microservices Lab
 
-A complete **7-microservice**, multi-language application that runs locally **without Docker**.
+A complete **7-microservice**, multi-language enterprise application supporting local development, single VM / EC2 deployment, Docker Compose, traditional Kubernetes manifests, and full GitOps CI/CD with Helm and ArgoCD.
+
+## Deployment & Operations Guides
+
+Choose your deployment mode based on your environment:
+
+| Guide | Target Environment | Tech Stack / Tooling | Documentation Link |
+|---|---|---|---|
+| 💻 **Local Bare-Metal** | Developer Machine (Ubuntu / macOS / WSL) | Native runtimes (Java, Go, Node, Python, .NET, Ruby, PHP) + Local Postgres | [guides/local-setup.md](guides/local-setup.md) |
+| ☁️ **AWS EC2 (Single VM)** | AWS EC2 (t3.medium / t3.large) | Ubuntu VM + Docker Compose / Systemd + Nginx Reverse Proxy (Port 80) | [guides/ec2-setup.md](guides/ec2-setup.md) |
+| 🐳 **Docker & Compose** | Containerized Local / Test Host | Multi-stage Dockerfiles + `docker-compose.yml` (9 coordinated containers) | [guides/docker-setup.md](guides/docker-setup.md) |
+| ☸️ **Raw Kubernetes Manifests** | EKS / Minikube / Kind | Traditional YAML in `k8s/` + Kustomize (`kubectl apply -k k8s/`) + EBS CSI | [guides/kubernetes-manifests.md](guides/kubernetes-manifests.md) |
+| 🚀 **CI/CD, Helm & ArgoCD** | AWS EKS Enterprise Production | Helm (`helm/ecommerce`) + GitHub Actions CI + ECR + ArgoCD GitOps | [guides/cicd-helm-argocd.md](guides/cicd-helm-argocd.md) |
 
 ## Architecture
 
