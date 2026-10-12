@@ -46,3 +46,4 @@ To regenerate the JSON files from code:
 ```bash
 python3 monitoring/dashboards/generate_dashboards.py
 ```
+
