@@ -165,9 +165,9 @@ resource "helm_release" "tempo" {
         }
       }
       persistence = {
-        enabled      = true
-        storageClass = var.observability_storage_class
-        size         = var.tempo_storage_size
+        enabled          = true
+        storageClassName = var.observability_storage_class
+        size             = var.tempo_storage_size
       }
     })
   ]
@@ -189,6 +189,9 @@ resource "helm_release" "opentelemetry_collector" {
 
   values = [
     yamlencode({
+      image = {
+        repository = "otel/opentelemetry-collector-contrib"
+      }
       mode = "deployment"
       config = {
         receivers = {

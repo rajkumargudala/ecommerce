@@ -131,7 +131,7 @@ variable "promtail_chart_version" {
 variable "tempo_chart_version" {
   description = "Helm chart version for Tempo."
   type        = string
-  default     = "1.17.4"
+  default     = "1.17.0"
 }
 
 variable "opentelemetry_collector_chart_version" {

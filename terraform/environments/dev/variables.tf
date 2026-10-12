@@ -94,13 +94,13 @@ variable "domain_name" {
 variable "enable_addons" {
   description = "Whether to deploy Kubernetes/Helm addons (gp3 StorageClass, AWS Load Balancer Controller, ArgoCD)."
   type        = bool
-  default     = false # Kept false by default to prevent altering existing live resources; enable when deploying next time
+  default     = true # Kept false by default to prevent altering existing live resources; enable when deploying next time
 }
 
 variable "enable_observability" {
   description = "Whether to deploy the full-stack observability suite (Prometheus, Grafana, Loki, Tempo, OpenTelemetry) under addons."
   type        = bool
-  default     = false # Kept false by default to prevent altering existing live resources; enable when deploying next time
+  default     = true # Kept false by default to prevent altering existing live resources; enable when deploying next time
 }
 
 
