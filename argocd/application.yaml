@@ -9,7 +9,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/rajkumargudala/ecommerce.git
-    targetRevision: HEAD
+    targetRevision: master
     path: helm/ecommerce
     helm:
       valueFiles:
