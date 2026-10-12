@@ -28,7 +28,7 @@ podDisruptionBudget:
 # 1. Auth Service (Java 21 / Spring Boot) + Dedicated auth-db
 auth:
   enabled: true
-  tag: auth-service-ebdc7e03ab881b3ff98556bddd2f4c4cc3823ae6
+  tag: auth-service-e1e043f
   replicaCount: 2
   service:
     port: 8081
@@ -52,7 +52,7 @@ auth:
 # 2. Catalog Service (Go) + Dedicated catalog-db
 catalog:
   enabled: true
-  tag: catalog-service-ebdc7e03ab881b3ff98556bddd2f4c4cc3823ae6
+  tag: catalog-service-e1e043f
   replicaCount: 2
   service:
     port: 8082
@@ -76,7 +76,7 @@ catalog:
 # 3. Inventory Service (Node.js) + Dedicated inventory-db
 inventory:
   enabled: true
-  tag: inventory-service-ebdc7e03ab881b3ff98556bddd2f4c4cc3823ae6
+  tag: inventory-service-e1e043f
   replicaCount: 2
   service:
     port: 8083
@@ -100,7 +100,7 @@ inventory:
 # 4. Order Service (Python) + Dedicated order-db
 order:
   enabled: true
-  tag: order-service-ebdc7e03ab881b3ff98556bddd2f4c4cc3823ae6
+  tag: order-service-e1e043f
   replicaCount: 2
   service:
     port: 8084
@@ -124,7 +124,7 @@ order:
 # 5. Payment Service (C# / .NET) + Dedicated payment-db
 payment:
   enabled: true
-  tag: payment-service-ebdc7e03ab881b3ff98556bddd2f4c4cc3823ae6
+  tag: payment-service-e1e043f
   replicaCount: 2
   service:
     port: 8085
@@ -148,7 +148,7 @@ payment:
 # 6. Notification Service (Ruby / Sinatra) + Dedicated notification-db
 notification:
   enabled: true
-  tag: notification-service-ebdc7e03ab881b3ff98556bddd2f4c4cc3823ae6
+  tag: notification-service-e1e043f
   replicaCount: 2
   service:
     port: 8086
@@ -172,7 +172,7 @@ notification:
 # 7. Analytics Service (PHP) + Dedicated analytics-db
 analytics:
   enabled: true
-  tag: analytics-service-ebdc7e03ab881b3ff98556bddd2f4c4cc3823ae6
+  tag: analytics-service-e1e043f
   replicaCount: 2
   service:
     port: 8087
@@ -196,7 +196,7 @@ analytics:
 # 8. Frontend Web UI (React + Nginx)
 frontend:
   enabled: true
-  tag: frontend-ebdc7e03ab881b3ff98556bddd2f4c4cc3823ae6
+  tag: frontend-e1e043f
   replicaCount: 2
   service:
     type: ClusterIP
