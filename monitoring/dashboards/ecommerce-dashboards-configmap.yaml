@@ -1,0 +1,913 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ecommerce-dashboard-overview
+  namespace: monitoring
+  labels:
+    grafana_dashboard: '1'
+    app.kubernetes.io/part-of: ecommerce-platform
+    app.kubernetes.io/managed-by: terraform
+  annotations:
+    grafana_folder: eCommerce Platform
+data:
+  ecommerce-overview.json: "{\n  \"annotations\": {\n    \"list\": [\n      {\n  \
+    \      \"builtIn\": 1,\n        \"datasource\": \"-- Grafana --\",\n        \"\
+    enable\": true,\n        \"hide\": true,\n        \"name\": \"Annotations & Alerts\"\
+    ,\n        \"type\": \"dashboard\"\n      }\n    ]\n  },\n  \"editable\": true,\n\
+    \  \"fiscalYearStartMonth\": 0,\n  \"graphTooltip\": 1,\n  \"id\": null,\n  \"\
+    links\": [\n    {\n      \"asDropdown\": false,\n      \"icon\": \"dashboard\"\
+    ,\n      \"includeVars\": true,\n      \"keepTime\": true,\n      \"tags\": [\n\
+    \        \"ecommerce\"\n      ],\n      \"targetBlank\": false,\n      \"title\"\
+    : \"eCommerce Navigation\",\n      \"type\": \"dashboards\"\n    }\n  ],\n  \"\
+    liveNow\": false,\n  \"panels\": [\n    {\n      \"collapsed\": false,\n     \
+    \ \"gridPos\": {\n        \"h\": 1,\n        \"w\": 24,\n        \"x\": 0,\n \
+    \       \"y\": 0\n      },\n      \"id\": 100,\n      \"title\": \"Microservices\
+    \ Health Status\",\n      \"type\": \"row\"\n    },\n    {\n      \"datasource\"\
+    : {\n        \"type\": \"prometheus\",\n        \"uid\": \"prometheus\"\n    \
+    \  },\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"color\"\
+    : {\n            \"mode\": \"thresholds\"\n          },\n          \"mappings\"\
+    : [\n            {\n              \"options\": {\n                \"0\": {\n \
+    \                 \"color\": \"red\",\n                  \"index\": 0,\n     \
+    \             \"text\": \"DOWN\"\n                }\n              },\n      \
+    \        \"type\": \"value\"\n            },\n            {\n              \"\
+    options\": {\n                \"from\": 1,\n                \"to\": 100,\n   \
+    \             \"result\": {\n                  \"color\": \"green\",\n       \
+    \           \"index\": 1,\n                  \"text\": \"HEALTHY\"\n         \
+    \       }\n              },\n              \"type\": \"range\"\n            }\n\
+    \          ],\n          \"thresholds\": {\n            \"mode\": \"absolute\"\
+    ,\n            \"steps\": [\n              {\n                \"color\": \"red\"\
+    ,\n                \"value\": null\n              },\n              {\n      \
+    \          \"color\": \"green\",\n                \"value\": 1\n             \
+    \ }\n            ]\n          }\n        }\n      },\n      \"gridPos\": {\n \
+    \       \"h\": 3,\n        \"w\": 3,\n        \"x\": 0,\n        \"y\": 1\n  \
+    \    },\n      \"id\": 1,\n      \"options\": {\n        \"colorMode\": \"background\"\
+    ,\n        \"graphMode\": \"none\",\n        \"justifyMode\": \"auto\",\n    \
+    \    \"orientation\": \"auto\",\n        \"reduceOptions\": {\n          \"calcs\"\
+    : [\n            \"lastNotNull\"\n          ],\n          \"fields\": \"\",\n\
+    \          \"values\": false\n        },\n        \"textMode\": \"auto\"\n   \
+    \   },\n      \"pluginVersion\": \"11.1.0\",\n      \"targets\": [\n        {\n\
+    \          \"datasource\": {\n            \"type\": \"prometheus\",\n        \
+    \    \"uid\": \"prometheus\"\n          },\n          \"expr\": \"sum(kube_deployment_status_replicas_available{namespace=\\\
+    \"default\\\", deployment=\\\"frontend\\\"}) or vector(0)\",\n          \"instant\"\
+    : true,\n          \"legendFormat\": \"Frontend (React)\",\n          \"refId\"\
+    : \"A\"\n        }\n      ],\n      \"title\": \"Frontend (Web UI)\",\n      \"\
+    type\": \"stat\"\n    },\n    {\n      \"datasource\": {\n        \"type\": \"\
+    prometheus\",\n        \"uid\": \"prometheus\"\n      },\n      \"fieldConfig\"\
+    : {\n        \"defaults\": {\n          \"color\": {\n            \"mode\": \"\
+    thresholds\"\n          },\n          \"mappings\": [\n            {\n       \
+    \       \"options\": {\n                \"0\": {\n                  \"color\"\
+    : \"red\",\n                  \"index\": 0,\n                  \"text\": \"DOWN\"\
+    \n                }\n              },\n              \"type\": \"value\"\n   \
+    \         },\n            {\n              \"options\": {\n                \"\
+    from\": 1,\n                \"to\": 100,\n                \"result\": {\n    \
+    \              \"color\": \"green\",\n                  \"index\": 1,\n      \
+    \            \"text\": \"HEALTHY\"\n                }\n              },\n    \
+    \          \"type\": \"range\"\n            }\n          ],\n          \"thresholds\"\
+    : {\n            \"mode\": \"absolute\",\n            \"steps\": [\n         \
+    \     {\n                \"color\": \"red\",\n                \"value\": null\n\
+    \              },\n              {\n                \"color\": \"green\",\n  \
+    \              \"value\": 1\n              }\n            ]\n          }\n   \
+    \     }\n      },\n      \"gridPos\": {\n        \"h\": 3,\n        \"w\": 3,\n\
+    \        \"x\": 3,\n        \"y\": 1\n      },\n      \"id\": 2,\n      \"options\"\
+    : {\n        \"colorMode\": \"background\",\n        \"graphMode\": \"none\",\n\
+    \        \"justifyMode\": \"auto\",\n        \"orientation\": \"auto\",\n    \
+    \    \"reduceOptions\": {\n          \"calcs\": [\n            \"lastNotNull\"\
+    \n          ],\n          \"fields\": \"\",\n          \"values\": false\n   \
+    \     },\n        \"textMode\": \"auto\"\n      },\n      \"pluginVersion\": \"\
+    11.1.0\",\n      \"targets\": [\n        {\n          \"datasource\": {\n    \
+    \        \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\n    \
+    \      },\n          \"expr\": \"sum(kube_deployment_status_replicas_available{namespace=\\\
+    \"default\\\", deployment=\\\"auth-service\\\"}) or vector(0)\",\n          \"\
+    instant\": true,\n          \"legendFormat\": \"Auth (Java 21)\",\n          \"\
+    refId\": \"A\"\n        }\n      ],\n      \"title\": \"Auth Service\",\n    \
+    \  \"type\": \"stat\"\n    },\n    {\n      \"datasource\": {\n        \"type\"\
+    : \"prometheus\",\n        \"uid\": \"prometheus\"\n      },\n      \"fieldConfig\"\
+    : {\n        \"defaults\": {\n          \"color\": {\n            \"mode\": \"\
+    thresholds\"\n          },\n          \"mappings\": [\n            {\n       \
+    \       \"options\": {\n                \"0\": {\n                  \"color\"\
+    : \"red\",\n                  \"index\": 0,\n                  \"text\": \"DOWN\"\
+    \n                }\n              },\n              \"type\": \"value\"\n   \
+    \         },\n            {\n              \"options\": {\n                \"\
+    from\": 1,\n                \"to\": 100,\n                \"result\": {\n    \
+    \              \"color\": \"green\",\n                  \"index\": 1,\n      \
+    \            \"text\": \"HEALTHY\"\n                }\n              },\n    \
+    \          \"type\": \"range\"\n            }\n          ],\n          \"thresholds\"\
+    : {\n            \"mode\": \"absolute\",\n            \"steps\": [\n         \
+    \     {\n                \"color\": \"red\",\n                \"value\": null\n\
+    \              },\n              {\n                \"color\": \"green\",\n  \
+    \              \"value\": 1\n              }\n            ]\n          }\n   \
+    \     }\n      },\n      \"gridPos\": {\n        \"h\": 3,\n        \"w\": 3,\n\
+    \        \"x\": 6,\n        \"y\": 1\n      },\n      \"id\": 3,\n      \"options\"\
+    : {\n        \"colorMode\": \"background\",\n        \"graphMode\": \"none\",\n\
+    \        \"justifyMode\": \"auto\",\n        \"orientation\": \"auto\",\n    \
+    \    \"reduceOptions\": {\n          \"calcs\": [\n            \"lastNotNull\"\
+    \n          ],\n          \"fields\": \"\",\n          \"values\": false\n   \
+    \     },\n        \"textMode\": \"auto\"\n      },\n      \"pluginVersion\": \"\
+    11.1.0\",\n      \"targets\": [\n        {\n          \"datasource\": {\n    \
+    \        \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\n    \
+    \      },\n          \"expr\": \"sum(kube_deployment_status_replicas_available{namespace=\\\
+    \"default\\\", deployment=\\\"catalog-service\\\"}) or vector(0)\",\n        \
+    \  \"instant\": true,\n          \"legendFormat\": \"Catalog (Go)\",\n       \
+    \   \"refId\": \"A\"\n        }\n      ],\n      \"title\": \"Catalog Service\"\
+    ,\n      \"type\": \"stat\"\n    },\n    {\n      \"datasource\": {\n        \"\
+    type\": \"prometheus\",\n        \"uid\": \"prometheus\"\n      },\n      \"fieldConfig\"\
+    : {\n        \"defaults\": {\n          \"color\": {\n            \"mode\": \"\
+    thresholds\"\n          },\n          \"mappings\": [\n            {\n       \
+    \       \"options\": {\n                \"0\": {\n                  \"color\"\
+    : \"red\",\n                  \"index\": 0,\n                  \"text\": \"DOWN\"\
+    \n                }\n              },\n              \"type\": \"value\"\n   \
+    \         },\n            {\n              \"options\": {\n                \"\
+    from\": 1,\n                \"to\": 100,\n                \"result\": {\n    \
+    \              \"color\": \"green\",\n                  \"index\": 1,\n      \
+    \            \"text\": \"HEALTHY\"\n                }\n              },\n    \
+    \          \"type\": \"range\"\n            }\n          ],\n          \"thresholds\"\
+    : {\n            \"mode\": \"absolute\",\n            \"steps\": [\n         \
+    \     {\n                \"color\": \"red\",\n                \"value\": null\n\
+    \              },\n              {\n                \"color\": \"green\",\n  \
+    \              \"value\": 1\n              }\n            ]\n          }\n   \
+    \     }\n      },\n      \"gridPos\": {\n        \"h\": 3,\n        \"w\": 3,\n\
+    \        \"x\": 9,\n        \"y\": 1\n      },\n      \"id\": 4,\n      \"options\"\
+    : {\n        \"colorMode\": \"background\",\n        \"graphMode\": \"none\",\n\
+    \        \"justifyMode\": \"auto\",\n        \"orientation\": \"auto\",\n    \
+    \    \"reduceOptions\": {\n          \"calcs\": [\n            \"lastNotNull\"\
+    \n          ],\n          \"fields\": \"\",\n          \"values\": false\n   \
+    \     },\n        \"textMode\": \"auto\"\n      },\n      \"pluginVersion\": \"\
+    11.1.0\",\n      \"targets\": [\n        {\n          \"datasource\": {\n    \
+    \        \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\n    \
+    \      },\n          \"expr\": \"sum(kube_deployment_status_replicas_available{namespace=\\\
+    \"default\\\", deployment=\\\"inventory-service\\\"}) or vector(0)\",\n      \
+    \    \"instant\": true,\n          \"legendFormat\": \"Inventory (Node.js)\",\n\
+    \          \"refId\": \"A\"\n        }\n      ],\n      \"title\": \"Inventory\
+    \ Service\",\n      \"type\": \"stat\"\n    },\n    {\n      \"datasource\": {\n\
+    \        \"type\": \"prometheus\",\n        \"uid\": \"prometheus\"\n      },\n\
+    \      \"fieldConfig\": {\n        \"defaults\": {\n          \"color\": {\n \
+    \           \"mode\": \"thresholds\"\n          },\n          \"mappings\": [\n\
+    \            {\n              \"options\": {\n                \"0\": {\n     \
+    \             \"color\": \"red\",\n                  \"index\": 0,\n         \
+    \         \"text\": \"DOWN\"\n                }\n              },\n          \
+    \    \"type\": \"value\"\n            },\n            {\n              \"options\"\
+    : {\n                \"from\": 1,\n                \"to\": 100,\n            \
+    \    \"result\": {\n                  \"color\": \"green\",\n                \
+    \  \"index\": 1,\n                  \"text\": \"HEALTHY\"\n                }\n\
+    \              },\n              \"type\": \"range\"\n            }\n        \
+    \  ],\n          \"thresholds\": {\n            \"mode\": \"absolute\",\n    \
+    \        \"steps\": [\n              {\n                \"color\": \"red\",\n\
+    \                \"value\": null\n              },\n              {\n        \
+    \        \"color\": \"green\",\n                \"value\": 1\n              }\n\
+    \            ]\n          }\n        }\n      },\n      \"gridPos\": {\n     \
+    \   \"h\": 3,\n        \"w\": 3,\n        \"x\": 12,\n        \"y\": 1\n     \
+    \ },\n      \"id\": 5,\n      \"options\": {\n        \"colorMode\": \"background\"\
+    ,\n        \"graphMode\": \"none\",\n        \"justifyMode\": \"auto\",\n    \
+    \    \"orientation\": \"auto\",\n        \"reduceOptions\": {\n          \"calcs\"\
+    : [\n            \"lastNotNull\"\n          ],\n          \"fields\": \"\",\n\
+    \          \"values\": false\n        },\n        \"textMode\": \"auto\"\n   \
+    \   },\n      \"pluginVersion\": \"11.1.0\",\n      \"targets\": [\n        {\n\
+    \          \"datasource\": {\n            \"type\": \"prometheus\",\n        \
+    \    \"uid\": \"prometheus\"\n          },\n          \"expr\": \"sum(kube_deployment_status_replicas_available{namespace=\\\
+    \"default\\\", deployment=\\\"order-service\\\"}) or vector(0)\",\n          \"\
+    instant\": true,\n          \"legendFormat\": \"Order (Python)\",\n          \"\
+    refId\": \"A\"\n        }\n      ],\n      \"title\": \"Order Service\",\n   \
+    \   \"type\": \"stat\"\n    },\n    {\n      \"datasource\": {\n        \"type\"\
+    : \"prometheus\",\n        \"uid\": \"prometheus\"\n      },\n      \"fieldConfig\"\
+    : {\n        \"defaults\": {\n          \"color\": {\n            \"mode\": \"\
+    thresholds\"\n          },\n          \"mappings\": [\n            {\n       \
+    \       \"options\": {\n                \"0\": {\n                  \"color\"\
+    : \"red\",\n                  \"index\": 0,\n                  \"text\": \"DOWN\"\
+    \n                }\n              },\n              \"type\": \"value\"\n   \
+    \         },\n            {\n              \"options\": {\n                \"\
+    from\": 1,\n                \"to\": 100,\n                \"result\": {\n    \
+    \              \"color\": \"green\",\n                  \"index\": 1,\n      \
+    \            \"text\": \"HEALTHY\"\n                }\n              },\n    \
+    \          \"type\": \"range\"\n            }\n          ],\n          \"thresholds\"\
+    : {\n            \"mode\": \"absolute\",\n            \"steps\": [\n         \
+    \     {\n                \"color\": \"red\",\n                \"value\": null\n\
+    \              },\n              {\n                \"color\": \"green\",\n  \
+    \              \"value\": 1\n              }\n            ]\n          }\n   \
+    \     }\n      },\n      \"gridPos\": {\n        \"h\": 3,\n        \"w\": 3,\n\
+    \        \"x\": 15,\n        \"y\": 1\n      },\n      \"id\": 6,\n      \"options\"\
+    : {\n        \"colorMode\": \"background\",\n        \"graphMode\": \"none\",\n\
+    \        \"justifyMode\": \"auto\",\n        \"orientation\": \"auto\",\n    \
+    \    \"reduceOptions\": {\n          \"calcs\": [\n            \"lastNotNull\"\
+    \n          ],\n          \"fields\": \"\",\n          \"values\": false\n   \
+    \     },\n        \"textMode\": \"auto\"\n      },\n      \"pluginVersion\": \"\
+    11.1.0\",\n      \"targets\": [\n        {\n          \"datasource\": {\n    \
+    \        \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\n    \
+    \      },\n          \"expr\": \"sum(kube_deployment_status_replicas_available{namespace=\\\
+    \"default\\\", deployment=\\\"payment-service\\\"}) or vector(0)\",\n        \
+    \  \"instant\": true,\n          \"legendFormat\": \"Payment (.NET)\",\n     \
+    \     \"refId\": \"A\"\n        }\n      ],\n      \"title\": \"Payment Service\"\
+    ,\n      \"type\": \"stat\"\n    },\n    {\n      \"datasource\": {\n        \"\
+    type\": \"prometheus\",\n        \"uid\": \"prometheus\"\n      },\n      \"fieldConfig\"\
+    : {\n        \"defaults\": {\n          \"color\": {\n            \"mode\": \"\
+    thresholds\"\n          },\n          \"mappings\": [\n            {\n       \
+    \       \"options\": {\n                \"0\": {\n                  \"color\"\
+    : \"red\",\n                  \"index\": 0,\n                  \"text\": \"DOWN\"\
+    \n                }\n              },\n              \"type\": \"value\"\n   \
+    \         },\n            {\n              \"options\": {\n                \"\
+    from\": 1,\n                \"to\": 100,\n                \"result\": {\n    \
+    \              \"color\": \"green\",\n                  \"index\": 1,\n      \
+    \            \"text\": \"HEALTHY\"\n                }\n              },\n    \
+    \          \"type\": \"range\"\n            }\n          ],\n          \"thresholds\"\
+    : {\n            \"mode\": \"absolute\",\n            \"steps\": [\n         \
+    \     {\n                \"color\": \"red\",\n                \"value\": null\n\
+    \              },\n              {\n                \"color\": \"green\",\n  \
+    \              \"value\": 1\n              }\n            ]\n          }\n   \
+    \     }\n      },\n      \"gridPos\": {\n        \"h\": 3,\n        \"w\": 3,\n\
+    \        \"x\": 18,\n        \"y\": 1\n      },\n      \"id\": 7,\n      \"options\"\
+    : {\n        \"colorMode\": \"background\",\n        \"graphMode\": \"none\",\n\
+    \        \"justifyMode\": \"auto\",\n        \"orientation\": \"auto\",\n    \
+    \    \"reduceOptions\": {\n          \"calcs\": [\n            \"lastNotNull\"\
+    \n          ],\n          \"fields\": \"\",\n          \"values\": false\n   \
+    \     },\n        \"textMode\": \"auto\"\n      },\n      \"pluginVersion\": \"\
+    11.1.0\",\n      \"targets\": [\n        {\n          \"datasource\": {\n    \
+    \        \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\n    \
+    \      },\n          \"expr\": \"sum(kube_deployment_status_replicas_available{namespace=\\\
+    \"default\\\", deployment=\\\"notification-service\\\"}) or vector(0)\",\n   \
+    \       \"instant\": true,\n          \"legendFormat\": \"Notification (Ruby)\"\
+    ,\n          \"refId\": \"A\"\n        }\n      ],\n      \"title\": \"Notification\
+    \ Service\",\n      \"type\": \"stat\"\n    },\n    {\n      \"datasource\": {\n\
+    \        \"type\": \"prometheus\",\n        \"uid\": \"prometheus\"\n      },\n\
+    \      \"fieldConfig\": {\n        \"defaults\": {\n          \"color\": {\n \
+    \           \"mode\": \"thresholds\"\n          },\n          \"mappings\": [\n\
+    \            {\n              \"options\": {\n                \"0\": {\n     \
+    \             \"color\": \"red\",\n                  \"index\": 0,\n         \
+    \         \"text\": \"DOWN\"\n                }\n              },\n          \
+    \    \"type\": \"value\"\n            },\n            {\n              \"options\"\
+    : {\n                \"from\": 1,\n                \"to\": 100,\n            \
+    \    \"result\": {\n                  \"color\": \"green\",\n                \
+    \  \"index\": 1,\n                  \"text\": \"HEALTHY\"\n                }\n\
+    \              },\n              \"type\": \"range\"\n            }\n        \
+    \  ],\n          \"thresholds\": {\n            \"mode\": \"absolute\",\n    \
+    \        \"steps\": [\n              {\n                \"color\": \"red\",\n\
+    \                \"value\": null\n              },\n              {\n        \
+    \        \"color\": \"green\",\n                \"value\": 1\n              }\n\
+    \            ]\n          }\n        }\n      },\n      \"gridPos\": {\n     \
+    \   \"h\": 3,\n        \"w\": 3,\n        \"x\": 21,\n        \"y\": 1\n     \
+    \ },\n      \"id\": 8,\n      \"options\": {\n        \"colorMode\": \"background\"\
+    ,\n        \"graphMode\": \"none\",\n        \"justifyMode\": \"auto\",\n    \
+    \    \"orientation\": \"auto\",\n        \"reduceOptions\": {\n          \"calcs\"\
+    : [\n            \"lastNotNull\"\n          ],\n          \"fields\": \"\",\n\
+    \          \"values\": false\n        },\n        \"textMode\": \"auto\"\n   \
+    \   },\n      \"pluginVersion\": \"11.1.0\",\n      \"targets\": [\n        {\n\
+    \          \"datasource\": {\n            \"type\": \"prometheus\",\n        \
+    \    \"uid\": \"prometheus\"\n          },\n          \"expr\": \"sum(kube_deployment_status_replicas_available{namespace=\\\
+    \"default\\\", deployment=\\\"analytics-service\\\"}) or vector(0)\",\n      \
+    \    \"instant\": true,\n          \"legendFormat\": \"Analytics (PHP)\",\n  \
+    \        \"refId\": \"A\"\n        }\n      ],\n      \"title\": \"Analytics Service\"\
+    ,\n      \"type\": \"stat\"\n    },\n    {\n      \"collapsed\": false,\n    \
+    \  \"gridPos\": {\n        \"h\": 1,\n        \"w\": 24,\n        \"x\": 0,\n\
+    \        \"y\": 4\n      },\n      \"id\": 101,\n      \"title\": \"Platform Health\
+    \ & Resource KPIs\",\n      \"type\": \"row\"\n    },\n    {\n      \"datasource\"\
+    : {\n        \"type\": \"prometheus\",\n        \"uid\": \"prometheus\"\n    \
+    \  },\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"color\"\
+    : {\n            \"mode\": \"thresholds\"\n          },\n          \"thresholds\"\
+    : {\n            \"mode\": \"absolute\",\n            \"steps\": [\n         \
+    \     {\n                \"color\": \"green\",\n                \"value\": null\n\
+    \              }\n            ]\n          }\n        }\n      },\n      \"gridPos\"\
+    : {\n        \"h\": 4,\n        \"w\": 4,\n        \"x\": 0,\n        \"y\": 5\n\
+    \      },\n      \"id\": 9,\n      \"options\": {\n        \"colorMode\": \"value\"\
+    ,\n        \"graphMode\": \"area\",\n        \"justifyMode\": \"auto\",\n    \
+    \    \"orientation\": \"auto\",\n        \"reduceOptions\": {\n          \"calcs\"\
+    : [\n            \"lastNotNull\"\n          ],\n          \"fields\": \"\",\n\
+    \          \"values\": false\n        },\n        \"textMode\": \"auto\"\n   \
+    \   },\n      \"pluginVersion\": \"11.1.0\",\n      \"targets\": [\n        {\n\
+    \          \"datasource\": {\n            \"type\": \"prometheus\",\n        \
+    \    \"uid\": \"prometheus\"\n          },\n          \"expr\": \"sum(kube_deployment_status_replicas_available{namespace=\\\
+    \"default\\\"})\",\n          \"instant\": true,\n          \"legendFormat\":\
+    \ \"Available Pods\",\n          \"refId\": \"A\"\n        }\n      ],\n     \
+    \ \"title\": \"Running App Replicas\",\n      \"type\": \"stat\"\n    },\n   \
+    \ {\n      \"datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\"\
+    : \"prometheus\"\n      },\n      \"fieldConfig\": {\n        \"defaults\": {\n\
+    \          \"color\": {\n            \"mode\": \"thresholds\"\n          },\n\
+    \          \"thresholds\": {\n            \"mode\": \"absolute\",\n          \
+    \  \"steps\": [\n              {\n                \"color\": \"green\",\n    \
+    \            \"value\": null\n              }\n            ]\n          }\n  \
+    \      }\n      },\n      \"gridPos\": {\n        \"h\": 4,\n        \"w\": 4,\n\
+    \        \"x\": 4,\n        \"y\": 5\n      },\n      \"id\": 10,\n      \"options\"\
+    : {\n        \"colorMode\": \"value\",\n        \"graphMode\": \"area\",\n   \
+    \     \"justifyMode\": \"auto\",\n        \"orientation\": \"auto\",\n       \
+    \ \"reduceOptions\": {\n          \"calcs\": [\n            \"lastNotNull\"\n\
+    \          ],\n          \"fields\": \"\",\n          \"values\": false\n    \
+    \    },\n        \"textMode\": \"auto\"\n      },\n      \"pluginVersion\": \"\
+    11.1.0\",\n      \"targets\": [\n        {\n          \"datasource\": {\n    \
+    \        \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\n    \
+    \      },\n          \"expr\": \"sum(kube_statefulset_status_replicas_ready{namespace=\\\
+    \"default\\\"})\",\n          \"instant\": true,\n          \"legendFormat\":\
+    \ \"Dedicated Databases\",\n          \"refId\": \"A\"\n        }\n      ],\n\
+    \      \"title\": \"Active Dedicated Databases\",\n      \"type\": \"stat\"\n\
+    \    },\n    {\n      \"datasource\": {\n        \"type\": \"prometheus\",\n \
+    \       \"uid\": \"prometheus\"\n      },\n      \"fieldConfig\": {\n        \"\
+    defaults\": {\n          \"color\": {\n            \"mode\": \"thresholds\"\n\
+    \          },\n          \"thresholds\": {\n            \"mode\": \"absolute\"\
+    ,\n            \"steps\": [\n              {\n                \"color\": \"green\"\
+    ,\n                \"value\": null\n              },\n              {\n      \
+    \          \"color\": \"yellow\",\n                \"value\": 1\n            \
+    \  },\n              {\n                \"color\": \"red\",\n                \"\
+    value\": 5\n              }\n            ]\n          }\n        }\n      },\n\
+    \      \"gridPos\": {\n        \"h\": 4,\n        \"w\": 4,\n        \"x\": 8,\n\
+    \        \"y\": 5\n      },\n      \"id\": 11,\n      \"options\": {\n       \
+    \ \"colorMode\": \"value\",\n        \"graphMode\": \"area\",\n        \"justifyMode\"\
+    : \"auto\",\n        \"orientation\": \"auto\",\n        \"reduceOptions\": {\n\
+    \          \"calcs\": [\n            \"lastNotNull\"\n          ],\n         \
+    \ \"fields\": \"\",\n          \"values\": false\n        },\n        \"textMode\"\
+    : \"auto\"\n      },\n      \"pluginVersion\": \"11.1.0\",\n      \"targets\"\
+    : [\n        {\n          \"datasource\": {\n            \"type\": \"prometheus\"\
+    ,\n            \"uid\": \"prometheus\"\n          },\n          \"expr\": \"sum(increase(kube_pod_container_status_restarts_total{namespace=\\\
+    \"default\\\"}[1h])) or vector(0)\",\n          \"instant\": true,\n         \
+    \ \"legendFormat\": \"Restarts\",\n          \"refId\": \"A\"\n        }\n   \
+    \   ],\n      \"title\": \"Pod Restarts (Past 1h)\",\n      \"type\": \"stat\"\
+    \n    },\n    {\n      \"datasource\": {\n        \"type\": \"prometheus\",\n\
+    \        \"uid\": \"prometheus\"\n      },\n      \"fieldConfig\": {\n       \
+    \ \"defaults\": {\n          \"color\": {\n            \"mode\": \"palette-classic\"\
+    \n          },\n          \"unit\": \"cores\"\n        }\n      },\n      \"gridPos\"\
+    : {\n        \"h\": 4,\n        \"w\": 4,\n        \"x\": 12,\n        \"y\":\
+    \ 5\n      },\n      \"id\": 12,\n      \"options\": {\n        \"colorMode\"\
+    : \"value\",\n        \"graphMode\": \"area\",\n        \"justifyMode\": \"auto\"\
+    ,\n        \"orientation\": \"auto\",\n        \"reduceOptions\": {\n        \
+    \  \"calcs\": [\n            \"lastNotNull\"\n          ],\n          \"fields\"\
+    : \"\",\n          \"values\": false\n        },\n        \"textMode\": \"auto\"\
+    \n      },\n      \"pluginVersion\": \"11.1.0\",\n      \"targets\": [\n     \
+    \   {\n          \"datasource\": {\n            \"type\": \"prometheus\",\n  \
+    \          \"uid\": \"prometheus\"\n          },\n          \"expr\": \"sum(rate(container_cpu_usage_seconds_total{namespace=\\\
+    \"default\\\", container!=\\\"\\\"}[5m]))\",\n          \"instant\": true,\n \
+    \         \"legendFormat\": \"Total CPU\",\n          \"refId\": \"A\"\n     \
+    \   }\n      ],\n      \"title\": \"Total App CPU Usage\",\n      \"type\": \"\
+    stat\"\n    },\n    {\n      \"datasource\": {\n        \"type\": \"prometheus\"\
+    ,\n        \"uid\": \"prometheus\"\n      },\n      \"fieldConfig\": {\n     \
+    \   \"defaults\": {\n          \"color\": {\n            \"mode\": \"palette-classic\"\
+    \n          },\n          \"unit\": \"bytes\"\n        }\n      },\n      \"gridPos\"\
+    : {\n        \"h\": 4,\n        \"w\": 4,\n        \"x\": 16,\n        \"y\":\
+    \ 5\n      },\n      \"id\": 13,\n      \"options\": {\n        \"colorMode\"\
+    : \"value\",\n        \"graphMode\": \"area\",\n        \"justifyMode\": \"auto\"\
+    ,\n        \"orientation\": \"auto\",\n        \"reduceOptions\": {\n        \
+    \  \"calcs\": [\n            \"lastNotNull\"\n          ],\n          \"fields\"\
+    : \"\",\n          \"values\": false\n        },\n        \"textMode\": \"auto\"\
+    \n      },\n      \"pluginVersion\": \"11.1.0\",\n      \"targets\": [\n     \
+    \   {\n          \"datasource\": {\n            \"type\": \"prometheus\",\n  \
+    \          \"uid\": \"prometheus\"\n          },\n          \"expr\": \"sum(container_memory_working_set_bytes{namespace=\\\
+    \"default\\\", container!=\\\"\\\"})\",\n          \"instant\": true,\n      \
+    \    \"legendFormat\": \"Total Memory\",\n          \"refId\": \"A\"\n       \
+    \ }\n      ],\n      \"title\": \"Total App Memory (Working Set)\",\n      \"\
+    type\": \"stat\"\n    },\n    {\n      \"datasource\": {\n        \"type\": \"\
+    prometheus\",\n        \"uid\": \"prometheus\"\n      },\n      \"fieldConfig\"\
+    : {\n        \"defaults\": {\n          \"color\": {\n            \"mode\": \"\
+    palette-classic\"\n          },\n          \"unit\": \"binBps\"\n        }\n \
+    \     },\n      \"gridPos\": {\n        \"h\": 4,\n        \"w\": 4,\n       \
+    \ \"x\": 20,\n        \"y\": 5\n      },\n      \"id\": 14,\n      \"options\"\
+    : {\n        \"colorMode\": \"value\",\n        \"graphMode\": \"area\",\n   \
+    \     \"justifyMode\": \"auto\",\n        \"orientation\": \"auto\",\n       \
+    \ \"reduceOptions\": {\n          \"calcs\": [\n            \"lastNotNull\"\n\
+    \          ],\n          \"fields\": \"\",\n          \"values\": false\n    \
+    \    },\n        \"textMode\": \"auto\"\n      },\n      \"pluginVersion\": \"\
+    11.1.0\",\n      \"targets\": [\n        {\n          \"datasource\": {\n    \
+    \        \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\n    \
+    \      },\n          \"expr\": \"sum(rate(container_network_receive_bytes_total{namespace=\\\
+    \"default\\\"}[5m])) + sum(rate(container_network_transmit_bytes_total{namespace=\\\
+    \"default\\\"}[5m]))\",\n          \"instant\": true,\n          \"legendFormat\"\
+    : \"Network I/O\",\n          \"refId\": \"A\"\n        }\n      ],\n      \"\
+    title\": \"Total Network Throughput\",\n      \"type\": \"stat\"\n    },\n   \
+    \ {\n      \"collapsed\": false,\n      \"gridPos\": {\n        \"h\": 1,\n  \
+    \      \"w\": 24,\n        \"x\": 0,\n        \"y\": 9\n      },\n      \"id\"\
+    : 102,\n      \"title\": \"Resource Consumption by Microservice\",\n      \"type\"\
+    : \"row\"\n    },\n    {\n      \"datasource\": {\n        \"type\": \"prometheus\"\
+    ,\n        \"uid\": \"prometheus\"\n      },\n      \"fieldConfig\": {\n     \
+    \   \"defaults\": {\n          \"custom\": {\n            \"drawStyle\": \"line\"\
+    ,\n            \"lineInterpolation\": \"smooth\",\n            \"lineWidth\":\
+    \ 2,\n            \"fillOpacity\": 15\n          },\n          \"unit\": \"cores\"\
+    \n        }\n      },\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\"\
+    : 12,\n        \"x\": 0,\n        \"y\": 10\n      },\n      \"id\": 15,\n   \
+    \   \"options\": {\n        \"legend\": {\n          \"calcs\": [\n          \
+    \  \"mean\",\n            \"max\",\n            \"lastNotNull\"\n          ],\n\
+    \          \"displayMode\": \"table\",\n          \"placement\": \"bottom\",\n\
+    \          \"showLegend\": true\n        },\n        \"tooltip\": {\n        \
+    \  \"mode\": \"multi\",\n          \"sort\": \"desc\"\n        }\n      },\n \
+    \     \"pluginVersion\": \"11.1.0\",\n      \"targets\": [\n        {\n      \
+    \    \"datasource\": {\n            \"type\": \"prometheus\",\n            \"\
+    uid\": \"prometheus\"\n          },\n          \"expr\": \"sum by (container)\
+    \ (rate(container_cpu_usage_seconds_total{namespace=\\\"default\\\", container!=\\\
+    \"\\\"}[5m]))\",\n          \"legendFormat\": \"{{container}}\",\n          \"\
+    refId\": \"A\"\n        }\n      ],\n      \"title\": \"CPU Usage by Service\"\
+    ,\n      \"type\": \"timeseries\"\n    },\n    {\n      \"datasource\": {\n  \
+    \      \"type\": \"prometheus\",\n        \"uid\": \"prometheus\"\n      },\n\
+    \      \"fieldConfig\": {\n        \"defaults\": {\n          \"custom\": {\n\
+    \            \"drawStyle\": \"line\",\n            \"lineInterpolation\": \"smooth\"\
+    ,\n            \"lineWidth\": 2,\n            \"fillOpacity\": 15\n          },\n\
+    \          \"unit\": \"bytes\"\n        }\n      },\n      \"gridPos\": {\n  \
+    \      \"h\": 8,\n        \"w\": 12,\n        \"x\": 12,\n        \"y\": 10\n\
+    \      },\n      \"id\": 16,\n      \"options\": {\n        \"legend\": {\n  \
+    \        \"calcs\": [\n            \"mean\",\n            \"max\",\n         \
+    \   \"lastNotNull\"\n          ],\n          \"displayMode\": \"table\",\n   \
+    \       \"placement\": \"bottom\",\n          \"showLegend\": true\n        },\n\
+    \        \"tooltip\": {\n          \"mode\": \"multi\",\n          \"sort\": \"\
+    desc\"\n        }\n      },\n      \"pluginVersion\": \"11.1.0\",\n      \"targets\"\
+    : [\n        {\n          \"datasource\": {\n            \"type\": \"prometheus\"\
+    ,\n            \"uid\": \"prometheus\"\n          },\n          \"expr\": \"sum\
+    \ by (container) (container_memory_working_set_bytes{namespace=\\\"default\\\"\
+    , container!=\\\"\\\"})\",\n          \"legendFormat\": \"{{container}}\",\n \
+    \         \"refId\": \"A\"\n        }\n      ],\n      \"title\": \"Memory Usage\
+    \ (Working Set) by Service\",\n      \"type\": \"timeseries\"\n    },\n    {\n\
+    \      \"collapsed\": false,\n      \"gridPos\": {\n        \"h\": 1,\n      \
+    \  \"w\": 24,\n        \"x\": 0,\n        \"y\": 18\n      },\n      \"id\": 103,\n\
+    \      \"title\": \"Dedicated Databases Storage & Health (gp3 Volumes)\",\n  \
+    \    \"type\": \"row\"\n    },\n    {\n      \"datasource\": {\n        \"type\"\
+    : \"prometheus\",\n        \"uid\": \"prometheus\"\n      },\n      \"fieldConfig\"\
+    : {\n        \"defaults\": {\n          \"max\": 100,\n          \"min\": 0,\n\
+    \          \"thresholds\": {\n            \"mode\": \"absolute\",\n          \
+    \  \"steps\": [\n              {\n                \"color\": \"green\",\n    \
+    \            \"value\": null\n              },\n              {\n            \
+    \    \"color\": \"#EAB839\",\n                \"value\": 75\n              },\n\
+    \              {\n                \"color\": \"red\",\n                \"value\"\
+    : 90\n              }\n            ]\n          },\n          \"unit\": \"percent\"\
+    \n        }\n      },\n      \"gridPos\": {\n        \"h\": 7,\n        \"w\"\
+    : 12,\n        \"x\": 0,\n        \"y\": 19\n      },\n      \"id\": 17,\n   \
+    \   \"options\": {\n        \"displayMode\": \"gradient\",\n        \"orientation\"\
+    : \"horizontal\",\n        \"reduceOptions\": {\n          \"calcs\": [\n    \
+    \        \"lastNotNull\"\n          ],\n          \"fields\": \"\",\n        \
+    \  \"values\": false\n        },\n        \"showUnfilled\": true\n      },\n \
+    \     \"pluginVersion\": \"11.1.0\",\n      \"targets\": [\n        {\n      \
+    \    \"datasource\": {\n            \"type\": \"prometheus\",\n            \"\
+    uid\": \"prometheus\"\n          },\n          \"expr\": \"kubelet_volume_stats_used_bytes{namespace=\\\
+    \"default\\\"} / kubelet_volume_stats_capacity_bytes{namespace=\\\"default\\\"\
+    } * 100\",\n          \"instant\": true,\n          \"legendFormat\": \"{{persistentvolumeclaim}}\"\
+    ,\n          \"refId\": \"A\"\n        }\n      ],\n      \"title\": \"Database\
+    \ PVC Capacity Used (%)\",\n      \"type\": \"bargauge\"\n    },\n    {\n    \
+    \  \"datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\": \"prometheus\"\
+    \n      },\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"custom\"\
+    : {\n            \"drawStyle\": \"line\",\n            \"lineInterpolation\":\
+    \ \"linear\",\n            \"lineWidth\": 2,\n            \"fillOpacity\": 10\n\
+    \          },\n          \"unit\": \"bytes\"\n        }\n      },\n      \"gridPos\"\
+    : {\n        \"h\": 7,\n        \"w\": 12,\n        \"x\": 12,\n        \"y\"\
+    : 19\n      },\n      \"id\": 18,\n      \"options\": {\n        \"legend\": {\n\
+    \          \"calcs\": [\n            \"lastNotNull\"\n          ],\n         \
+    \ \"displayMode\": \"table\",\n          \"placement\": \"bottom\",\n        \
+    \  \"showLegend\": true\n        },\n        \"tooltip\": {\n          \"mode\"\
+    : \"single\"\n        }\n      },\n      \"pluginVersion\": \"11.1.0\",\n    \
+    \  \"targets\": [\n        {\n          \"datasource\": {\n            \"type\"\
+    : \"prometheus\",\n            \"uid\": \"prometheus\"\n          },\n       \
+    \   \"expr\": \"kubelet_volume_stats_used_bytes{namespace=\\\"default\\\"}\",\n\
+    \          \"legendFormat\": \"{{persistentvolumeclaim}} Used\",\n          \"\
+    refId\": \"A\"\n        }\n      ],\n      \"title\": \"Database PVC Disk Space\
+    \ Consumed (Bytes)\",\n      \"type\": \"timeseries\"\n    },\n    {\n      \"\
+    collapsed\": false,\n      \"gridPos\": {\n        \"h\": 1,\n        \"w\": 24,\n\
+    \        \"x\": 0,\n        \"y\": 26\n      },\n      \"id\": 104,\n      \"\
+    title\": \"Centralized Application Log Activity (Loki)\",\n      \"type\": \"\
+    row\"\n    },\n    {\n      \"datasource\": {\n        \"type\": \"loki\",\n \
+    \       \"uid\": \"P8E80F9AEF21F6940\"\n      },\n      \"fieldConfig\": {\n \
+    \       \"defaults\": {\n          \"custom\": {\n            \"drawStyle\": \"\
+    bars\",\n            \"lineWidth\": 1,\n            \"fillOpacity\": 60,\n   \
+    \         \"stacking\": {\n              \"group\": \"A\",\n              \"mode\"\
+    : \"normal\"\n            }\n          },\n          \"unit\": \"short\"\n   \
+    \     }\n      },\n      \"gridPos\": {\n        \"h\": 7,\n        \"w\": 24,\n\
+    \        \"x\": 0,\n        \"y\": 27\n      },\n      \"id\": 19,\n      \"options\"\
+    : {\n        \"legend\": {\n          \"calcs\": [\n            \"sum\",\n   \
+    \         \"lastNotNull\"\n          ],\n          \"displayMode\": \"table\"\
+    ,\n          \"placement\": \"right\",\n          \"showLegend\": true\n     \
+    \   },\n        \"tooltip\": {\n          \"mode\": \"multi\",\n          \"sort\"\
+    : \"desc\"\n        }\n      },\n      \"pluginVersion\": \"11.1.0\",\n      \"\
+    targets\": [\n        {\n          \"datasource\": {\n            \"type\": \"\
+    loki\",\n            \"uid\": \"P8E80F9AEF21F6940\"\n          },\n          \"\
+    expr\": \"sum by (app) (rate({namespace=\\\"default\\\"}[1m]))\",\n          \"\
+    legendFormat\": \"{{app}}\",\n          \"refId\": \"A\"\n        }\n      ],\n\
+    \      \"title\": \"Application Log Streams Ingestion Rate\",\n      \"type\"\
+    : \"timeseries\"\n    }\n  ],\n  \"refresh\": \"10s\",\n  \"schemaVersion\": 39,\n\
+    \  \"tags\": [\n    \"ecommerce\",\n    \"platform\",\n    \"microservices\",\n\
+    \    \"overview\"\n  ],\n  \"templating\": {\n    \"list\": []\n  },\n  \"time\"\
+    : {\n    \"from\": \"now-1h\",\n    \"to\": \"now\"\n  },\n  \"timepicker\": {\n\
+    \    \"refresh_intervals\": [\n      \"5s\",\n      \"10s\",\n      \"30s\",\n\
+    \      \"1m\",\n      \"5m\"\n    ]\n  },\n  \"timezone\": \"browser\",\n  \"\
+    title\": \"eCommerce Platform - Application Overview\",\n  \"uid\": \"ecommerce-overview\"\
+    ,\n  \"version\": 1\n}"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ecommerce-dashboard-services
+  namespace: monitoring
+  labels:
+    grafana_dashboard: '1'
+    app.kubernetes.io/part-of: ecommerce-platform
+    app.kubernetes.io/managed-by: terraform
+  annotations:
+    grafana_folder: eCommerce Platform
+data:
+  ecommerce-services.json: "{\n  \"annotations\": {\n    \"list\": []\n  },\n  \"\
+    editable\": true,\n  \"fiscalYearStartMonth\": 0,\n  \"graphTooltip\": 1,\n  \"\
+    id\": null,\n  \"links\": [\n    {\n      \"asDropdown\": false,\n      \"icon\"\
+    : \"dashboard\",\n      \"includeVars\": true,\n      \"keepTime\": true,\n  \
+    \    \"tags\": [\n        \"ecommerce\"\n      ],\n      \"targetBlank\": false,\n\
+    \      \"title\": \"eCommerce Navigation\",\n      \"type\": \"dashboards\"\n\
+    \    }\n  ],\n  \"liveNow\": false,\n  \"panels\": [\n    {\n      \"collapsed\"\
+    : false,\n      \"gridPos\": {\n        \"h\": 1,\n        \"w\": 24,\n      \
+    \  \"x\": 0,\n        \"y\": 0\n      },\n      \"id\": 200,\n      \"title\"\
+    : \"Service Details & Health Metrics\",\n      \"type\": \"row\"\n    },\n   \
+    \ {\n      \"datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\"\
+    : \"prometheus\"\n      },\n      \"fieldConfig\": {\n        \"defaults\": {\n\
+    \          \"color\": {\n            \"mode\": \"thresholds\"\n          },\n\
+    \          \"thresholds\": {\n            \"mode\": \"absolute\",\n          \
+    \  \"steps\": [\n              {\n                \"color\": \"green\",\n    \
+    \            \"value\": null\n              }\n            ]\n          }\n  \
+    \      }\n      },\n      \"gridPos\": {\n        \"h\": 4,\n        \"w\": 6,\n\
+    \        \"x\": 0,\n        \"y\": 1\n      },\n      \"id\": 21,\n      \"options\"\
+    : {\n        \"colorMode\": \"value\",\n        \"graphMode\": \"area\",\n   \
+    \     \"justifyMode\": \"auto\",\n        \"orientation\": \"auto\",\n       \
+    \ \"reduceOptions\": {\n          \"calcs\": [\n            \"lastNotNull\"\n\
+    \          ],\n          \"fields\": \"\",\n          \"values\": false\n    \
+    \    },\n        \"textMode\": \"auto\"\n      },\n      \"pluginVersion\": \"\
+    11.1.0\",\n      \"targets\": [\n        {\n          \"datasource\": {\n    \
+    \        \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\n    \
+    \      },\n          \"expr\": \"count(kube_pod_info{namespace=\\\"default\\\"\
+    , pod=~\\\"$pod\\\"})\",\n          \"instant\": true,\n          \"legendFormat\"\
+    : \"Active Pods\",\n          \"refId\": \"A\"\n        }\n      ],\n      \"\
+    title\": \"Selected Service Pod Count\",\n      \"type\": \"stat\"\n    },\n \
+    \   {\n      \"datasource\": {\n        \"type\": \"prometheus\",\n        \"\
+    uid\": \"prometheus\"\n      },\n      \"fieldConfig\": {\n        \"defaults\"\
+    : {\n          \"color\": {\n            \"mode\": \"thresholds\"\n          },\n\
+    \          \"thresholds\": {\n            \"mode\": \"absolute\",\n          \
+    \  \"steps\": [\n              {\n                \"color\": \"green\",\n    \
+    \            \"value\": null\n              },\n              {\n            \
+    \    \"color\": \"#EAB839\",\n                \"value\": 1\n              },\n\
+    \              {\n                \"color\": \"red\",\n                \"value\"\
+    : 5\n              }\n            ]\n          }\n        }\n      },\n      \"\
+    gridPos\": {\n        \"h\": 4,\n        \"w\": 6,\n        \"x\": 6,\n      \
+    \  \"y\": 1\n      },\n      \"id\": 22,\n      \"options\": {\n        \"colorMode\"\
+    : \"value\",\n        \"graphMode\": \"area\",\n        \"justifyMode\": \"auto\"\
+    ,\n        \"orientation\": \"auto\",\n        \"reduceOptions\": {\n        \
+    \  \"calcs\": [\n            \"lastNotNull\"\n          ],\n          \"fields\"\
+    : \"\",\n          \"values\": false\n        },\n        \"textMode\": \"auto\"\
+    \n      },\n      \"pluginVersion\": \"11.1.0\",\n      \"targets\": [\n     \
+    \   {\n          \"datasource\": {\n            \"type\": \"prometheus\",\n  \
+    \          \"uid\": \"prometheus\"\n          },\n          \"expr\": \"sum(increase(kube_pod_container_status_restarts_total{namespace=\\\
+    \"default\\\", container=~\\\"$service\\\", pod=~\\\"$pod\\\"}[24h])) or vector(0)\"\
+    ,\n          \"instant\": true,\n          \"legendFormat\": \"Restarts\",\n \
+    \         \"refId\": \"A\"\n        }\n      ],\n      \"title\": \"Pod Restarts\
+    \ (Past 24h)\",\n      \"type\": \"stat\"\n    },\n    {\n      \"datasource\"\
+    : {\n        \"type\": \"prometheus\",\n        \"uid\": \"prometheus\"\n    \
+    \  },\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"color\"\
+    : {\n            \"mode\": \"palette-classic\"\n          },\n          \"unit\"\
+    : \"cores\"\n        }\n      },\n      \"gridPos\": {\n        \"h\": 4,\n  \
+    \      \"w\": 6,\n        \"x\": 12,\n        \"y\": 1\n      },\n      \"id\"\
+    : 23,\n      \"options\": {\n        \"colorMode\": \"value\",\n        \"graphMode\"\
+    : \"area\",\n        \"justifyMode\": \"auto\",\n        \"orientation\": \"auto\"\
+    ,\n        \"reduceOptions\": {\n          \"calcs\": [\n            \"lastNotNull\"\
+    \n          ],\n          \"fields\": \"\",\n          \"values\": false\n   \
+    \     },\n        \"textMode\": \"auto\"\n      },\n      \"pluginVersion\": \"\
+    11.1.0\",\n      \"targets\": [\n        {\n          \"datasource\": {\n    \
+    \        \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\n    \
+    \      },\n          \"expr\": \"sum(rate(container_cpu_usage_seconds_total{namespace=\\\
+    \"default\\\", container=~\\\"$service\\\", pod=~\\\"$pod\\\"}[5m]))\",\n    \
+    \      \"instant\": true,\n          \"legendFormat\": \"CPU\",\n          \"\
+    refId\": \"A\"\n        }\n      ],\n      \"title\": \"Current CPU Usage\",\n\
+    \      \"type\": \"stat\"\n    },\n    {\n      \"datasource\": {\n        \"\
+    type\": \"prometheus\",\n        \"uid\": \"prometheus\"\n      },\n      \"fieldConfig\"\
+    : {\n        \"defaults\": {\n          \"color\": {\n            \"mode\": \"\
+    palette-classic\"\n          },\n          \"unit\": \"bytes\"\n        }\n  \
+    \    },\n      \"gridPos\": {\n        \"h\": 4,\n        \"w\": 6,\n        \"\
+    x\": 18,\n        \"y\": 1\n      },\n      \"id\": 24,\n      \"options\": {\n\
+    \        \"colorMode\": \"value\",\n        \"graphMode\": \"area\",\n       \
+    \ \"justifyMode\": \"auto\",\n        \"orientation\": \"auto\",\n        \"reduceOptions\"\
+    : {\n          \"calcs\": [\n            \"lastNotNull\"\n          ],\n     \
+    \     \"fields\": \"\",\n          \"values\": false\n        },\n        \"textMode\"\
+    : \"auto\"\n      },\n      \"pluginVersion\": \"11.1.0\",\n      \"targets\"\
+    : [\n        {\n          \"datasource\": {\n            \"type\": \"prometheus\"\
+    ,\n            \"uid\": \"prometheus\"\n          },\n          \"expr\": \"sum(container_memory_working_set_bytes{namespace=\\\
+    \"default\\\", container=~\\\"$service\\\", pod=~\\\"$pod\\\"})\",\n         \
+    \ \"instant\": true,\n          \"legendFormat\": \"Memory\",\n          \"refId\"\
+    : \"A\"\n        }\n      ],\n      \"title\": \"Current Memory (Working Set)\"\
+    ,\n      \"type\": \"stat\"\n    },\n    {\n      \"collapsed\": false,\n    \
+    \  \"gridPos\": {\n        \"h\": 1,\n        \"w\": 24,\n        \"x\": 0,\n\
+    \        \"y\": 5\n      },\n      \"id\": 201,\n      \"title\": \"CPU & Memory\
+    \ Performance Analysis\",\n      \"type\": \"row\"\n    },\n    {\n      \"datasource\"\
+    : {\n        \"type\": \"prometheus\",\n        \"uid\": \"prometheus\"\n    \
+    \  },\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"custom\"\
+    : {\n            \"drawStyle\": \"line\",\n            \"lineInterpolation\":\
+    \ \"smooth\",\n            \"lineWidth\": 2,\n            \"fillOpacity\": 15\n\
+    \          },\n          \"unit\": \"cores\"\n        }\n      },\n      \"gridPos\"\
+    : {\n        \"h\": 8,\n        \"w\": 12,\n        \"x\": 0,\n        \"y\":\
+    \ 6\n      },\n      \"id\": 25,\n      \"options\": {\n        \"legend\": {\n\
+    \          \"calcs\": [\n            \"mean\",\n            \"max\",\n       \
+    \     \"lastNotNull\"\n          ],\n          \"displayMode\": \"table\",\n \
+    \         \"placement\": \"bottom\",\n          \"showLegend\": true\n       \
+    \ },\n        \"tooltip\": {\n          \"mode\": \"multi\",\n          \"sort\"\
+    : \"desc\"\n        }\n      },\n      \"pluginVersion\": \"11.1.0\",\n      \"\
+    targets\": [\n        {\n          \"datasource\": {\n            \"type\": \"\
+    prometheus\",\n            \"uid\": \"prometheus\"\n          },\n          \"\
+    expr\": \"rate(container_cpu_usage_seconds_total{namespace=\\\"default\\\", container=~\\\
+    \"$service\\\", pod=~\\\"$pod\\\"}[5m])\",\n          \"legendFormat\": \"{{pod}}\
+    \ (Used)\",\n          \"refId\": \"A\"\n        },\n        {\n          \"datasource\"\
+    : {\n            \"type\": \"prometheus\",\n            \"uid\": \"prometheus\"\
+    \n          },\n          \"expr\": \"kube_pod_container_resource_requests{namespace=\\\
+    \"default\\\", container=~\\\"$service\\\", pod=~\\\"$pod\\\", resource=\\\"cpu\\\
+    \"}\",\n          \"legendFormat\": \"{{pod}} (Request)\",\n          \"refId\"\
+    : \"B\"\n        },\n        {\n          \"datasource\": {\n            \"type\"\
+    : \"prometheus\",\n            \"uid\": \"prometheus\"\n          },\n       \
+    \   \"expr\": \"kube_pod_container_resource_limits{namespace=\\\"default\\\",\
+    \ container=~\\\"$service\\\", pod=~\\\"$pod\\\", resource=\\\"cpu\\\"}\",\n \
+    \         \"legendFormat\": \"{{pod}} (Limit)\",\n          \"refId\": \"C\"\n\
+    \        }\n      ],\n      \"title\": \"CPU Usage vs Request & Limit\",\n   \
+    \   \"type\": \"timeseries\"\n    },\n    {\n      \"datasource\": {\n       \
+    \ \"type\": \"prometheus\",\n        \"uid\": \"prometheus\"\n      },\n     \
+    \ \"fieldConfig\": {\n        \"defaults\": {\n          \"custom\": {\n     \
+    \       \"drawStyle\": \"line\",\n            \"lineInterpolation\": \"smooth\"\
+    ,\n            \"lineWidth\": 2,\n            \"fillOpacity\": 15\n          },\n\
+    \          \"unit\": \"bytes\"\n        }\n      },\n      \"gridPos\": {\n  \
+    \      \"h\": 8,\n        \"w\": 12,\n        \"x\": 12,\n        \"y\": 6\n \
+    \     },\n      \"id\": 26,\n      \"options\": {\n        \"legend\": {\n   \
+    \       \"calcs\": [\n            \"mean\",\n            \"max\",\n          \
+    \  \"lastNotNull\"\n          ],\n          \"displayMode\": \"table\",\n    \
+    \      \"placement\": \"bottom\",\n          \"showLegend\": true\n        },\n\
+    \        \"tooltip\": {\n          \"mode\": \"multi\",\n          \"sort\": \"\
+    desc\"\n        }\n      },\n      \"pluginVersion\": \"11.1.0\",\n      \"targets\"\
+    : [\n        {\n          \"datasource\": {\n            \"type\": \"prometheus\"\
+    ,\n            \"uid\": \"prometheus\"\n          },\n          \"expr\": \"container_memory_working_set_bytes{namespace=\\\
+    \"default\\\", container=~\\\"$service\\\", pod=~\\\"$pod\\\"}\",\n          \"\
+    legendFormat\": \"{{pod}} (Used)\",\n          \"refId\": \"A\"\n        },\n\
+    \        {\n          \"datasource\": {\n            \"type\": \"prometheus\"\
+    ,\n            \"uid\": \"prometheus\"\n          },\n          \"expr\": \"kube_pod_container_resource_requests{namespace=\\\
+    \"default\\\", container=~\\\"$service\\\", pod=~\\\"$pod\\\", resource=\\\"memory\\\
+    \"}\",\n          \"legendFormat\": \"{{pod}} (Request)\",\n          \"refId\"\
+    : \"B\"\n        },\n        {\n          \"datasource\": {\n            \"type\"\
+    : \"prometheus\",\n            \"uid\": \"prometheus\"\n          },\n       \
+    \   \"expr\": \"kube_pod_container_resource_limits{namespace=\\\"default\\\",\
+    \ container=~\\\"$service\\\", pod=~\\\"$pod\\\", resource=\\\"memory\\\"}\",\n\
+    \          \"legendFormat\": \"{{pod}} (Limit)\",\n          \"refId\": \"C\"\n\
+    \        }\n      ],\n      \"title\": \"Memory Usage (Working Set) vs Request\
+    \ & Limit\",\n      \"type\": \"timeseries\"\n    },\n    {\n      \"collapsed\"\
+    : false,\n      \"gridPos\": {\n        \"h\": 1,\n        \"w\": 24,\n      \
+    \  \"x\": 0,\n        \"y\": 14\n      },\n      \"id\": 202,\n      \"title\"\
+    : \"Throttling & Network I/O\",\n      \"type\": \"row\"\n    },\n    {\n    \
+    \  \"datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\": \"prometheus\"\
+    \n      },\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"custom\"\
+    : {\n            \"drawStyle\": \"line\",\n            \"lineInterpolation\":\
+    \ \"linear\",\n            \"lineWidth\": 2,\n            \"fillOpacity\": 15\n\
+    \          },\n          \"unit\": \"s\"\n        }\n      },\n      \"gridPos\"\
+    : {\n        \"h\": 7,\n        \"w\": 12,\n        \"x\": 0,\n        \"y\":\
+    \ 15\n      },\n      \"id\": 27,\n      \"options\": {\n        \"legend\": {\n\
+    \          \"calcs\": [\n            \"mean\",\n            \"max\"\n        \
+    \  ],\n          \"displayMode\": \"table\",\n          \"placement\": \"bottom\"\
+    ,\n          \"showLegend\": true\n        },\n        \"tooltip\": {\n      \
+    \    \"mode\": \"multi\"\n        }\n      },\n      \"pluginVersion\": \"11.1.0\"\
+    ,\n      \"targets\": [\n        {\n          \"datasource\": {\n            \"\
+    type\": \"prometheus\",\n            \"uid\": \"prometheus\"\n          },\n \
+    \         \"expr\": \"rate(container_cpu_cfs_throttled_seconds_total{namespace=\\\
+    \"default\\\", container=~\\\"$service\\\", pod=~\\\"$pod\\\"}[5m])\",\n     \
+    \     \"legendFormat\": \"{{pod}} throttled\",\n          \"refId\": \"A\"\n \
+    \       }\n      ],\n      \"title\": \"CPU Throttling Rate (CGroup Throttled\
+    \ Seconds)\",\n      \"type\": \"timeseries\"\n    },\n    {\n      \"datasource\"\
+    : {\n        \"type\": \"prometheus\",\n        \"uid\": \"prometheus\"\n    \
+    \  },\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"custom\"\
+    : {\n            \"drawStyle\": \"line\",\n            \"lineInterpolation\":\
+    \ \"linear\",\n            \"lineWidth\": 2,\n            \"fillOpacity\": 10\n\
+    \          },\n          \"unit\": \"binBps\"\n        }\n      },\n      \"gridPos\"\
+    : {\n        \"h\": 7,\n        \"w\": 12,\n        \"x\": 12,\n        \"y\"\
+    : 15\n      },\n      \"id\": 28,\n      \"options\": {\n        \"legend\": {\n\
+    \          \"calcs\": [\n            \"mean\",\n            \"max\",\n       \
+    \     \"lastNotNull\"\n          ],\n          \"displayMode\": \"table\",\n \
+    \         \"placement\": \"bottom\",\n          \"showLegend\": true\n       \
+    \ },\n        \"tooltip\": {\n          \"mode\": \"multi\"\n        }\n     \
+    \ },\n      \"pluginVersion\": \"11.1.0\",\n      \"targets\": [\n        {\n\
+    \          \"datasource\": {\n            \"type\": \"prometheus\",\n        \
+    \    \"uid\": \"prometheus\"\n          },\n          \"expr\": \"rate(container_network_receive_bytes_total{namespace=\\\
+    \"default\\\", pod=~\\\"$pod\\\"}[5m])\",\n          \"legendFormat\": \"{{pod}}\
+    \ (Rx - Inbound)\",\n          \"refId\": \"A\"\n        },\n        {\n     \
+    \     \"datasource\": {\n            \"type\": \"prometheus\",\n            \"\
+    uid\": \"prometheus\"\n          },\n          \"expr\": \"rate(container_network_transmit_bytes_total{namespace=\\\
+    \"default\\\", pod=~\\\"$pod\\\"}[5m])\",\n          \"legendFormat\": \"{{pod}}\
+    \ (Tx - Outbound)\",\n          \"refId\": \"B\"\n        }\n      ],\n      \"\
+    title\": \"Network Bandwidth (Rx/Tx)\",\n      \"type\": \"timeseries\"\n    },\n\
+    \    {\n      \"collapsed\": false,\n      \"gridPos\": {\n        \"h\": 1,\n\
+    \        \"w\": 24,\n        \"x\": 0,\n        \"y\": 22\n      },\n      \"\
+    id\": 203,\n      \"title\": \"Pod Status & Node Placement Inventory\",\n    \
+    \  \"type\": \"row\"\n    },\n    {\n      \"datasource\": {\n        \"type\"\
+    : \"prometheus\",\n        \"uid\": \"prometheus\"\n      },\n      \"fieldConfig\"\
+    : {\n        \"defaults\": {\n          \"custom\": {\n            \"align\":\
+    \ \"auto\",\n            \"displayMode\": \"auto\"\n          }\n        }\n \
+    \     },\n      \"gridPos\": {\n        \"h\": 7,\n        \"w\": 24,\n      \
+    \  \"x\": 0,\n        \"y\": 23\n      },\n      \"id\": 29,\n      \"options\"\
+    : {\n        \"showHeader\": true\n      },\n      \"pluginVersion\": \"11.1.0\"\
+    ,\n      \"targets\": [\n        {\n          \"datasource\": {\n            \"\
+    type\": \"prometheus\",\n            \"uid\": \"prometheus\"\n          },\n \
+    \         \"expr\": \"kube_pod_info{namespace=\\\"default\\\", pod=~\\\"$pod\\\
+    \"}\",\n          \"format\": \"table\",\n          \"instant\": true,\n     \
+    \     \"refId\": \"A\"\n        }\n      ],\n      \"title\": \"Active Pod Inventory\
+    \ & Placement\",\n      \"transformations\": [\n        {\n          \"id\": \"\
+    organize\",\n          \"options\": {\n            \"excludeByName\": {\n    \
+    \          \"Time\": true,\n              \"Value\": true,\n              \"__name__\"\
+    : true,\n              \"created_by_kind\": false,\n              \"created_by_name\"\
+    : false,\n              \"endpoint\": true,\n              \"instance\": true,\n\
+    \              \"job\": true,\n              \"namespace\": true,\n          \
+    \    \"service\": true,\n              \"uid\": true\n            },\n       \
+    \     \"indexByName\": {\n              \"pod\": 0,\n              \"pod_ip\"\
+    : 1,\n              \"node\": 2,\n              \"host_ip\": 3,\n            \
+    \  \"created_by_kind\": 4,\n              \"created_by_name\": 5\n           \
+    \ },\n            \"renameByName\": {\n              \"created_by_kind\": \"Controller\
+    \ Kind\",\n              \"created_by_name\": \"Controller Name\",\n         \
+    \     \"host_ip\": \"Node IP\",\n              \"node\": \"EKS Node\",\n     \
+    \         \"pod\": \"Pod Name\",\n              \"pod_ip\": \"Pod IP\"\n     \
+    \       }\n          }\n        }\n      ],\n      \"type\": \"table\"\n    }\n\
+    \  ],\n  \"refresh\": \"10s\",\n  \"schemaVersion\": 39,\n  \"tags\": [\n    \"\
+    ecommerce\",\n    \"services\",\n    \"deep-dive\"\n  ],\n  \"templating\": {\n\
+    \    \"list\": [\n      {\n        \"current\": {\n          \"selected\": true,\n\
+    \          \"text\": \"auth-service\",\n          \"value\": \"auth-service\"\n\
+    \        },\n        \"datasource\": {\n          \"type\": \"prometheus\",\n\
+    \          \"uid\": \"prometheus\"\n        },\n        \"definition\": \"label_values(kube_pod_container_info{namespace=\\\
+    \"default\\\"}, container)\",\n        \"hide\": 0,\n        \"includeAll\": false,\n\
+    \        \"label\": \"Microservice\",\n        \"multi\": false,\n        \"name\"\
+    : \"service\",\n        \"options\": [],\n        \"query\": {\n          \"query\"\
+    : \"label_values(kube_pod_container_info{namespace=\\\"default\\\"}, container)\"\
+    ,\n          \"refId\": \"StandardVariableQuery\"\n        },\n        \"refresh\"\
+    : 1,\n        \"regex\": \"\",\n        \"skipUrlSync\": false,\n        \"sort\"\
+    : 1,\n        \"type\": \"query\"\n      },\n      {\n        \"allValue\": \"\
+    .*\",\n        \"current\": {\n          \"selected\": true,\n          \"text\"\
+    : \"All\",\n          \"value\": \"$__all\"\n        },\n        \"datasource\"\
+    : {\n          \"type\": \"prometheus\",\n          \"uid\": \"prometheus\"\n\
+    \        },\n        \"definition\": \"label_values(kube_pod_info{namespace=\\\
+    \"default\\\", pod=~\\\"$service.*\\\"}, pod)\",\n        \"hide\": 0,\n     \
+    \   \"includeAll\": true,\n        \"label\": \"Pod Instance\",\n        \"multi\"\
+    : true,\n        \"name\": \"pod\",\n        \"options\": [],\n        \"query\"\
+    : {\n          \"query\": \"label_values(kube_pod_info{namespace=\\\"default\\\
+    \", pod=~\\\"$service.*\\\"}, pod)\",\n          \"refId\": \"StandardVariableQuery\"\
+    \n        },\n        \"refresh\": 1,\n        \"regex\": \"\",\n        \"skipUrlSync\"\
+    : false,\n        \"sort\": 1,\n        \"type\": \"query\"\n      }\n    ]\n\
+    \  },\n  \"time\": {\n    \"from\": \"now-1h\",\n    \"to\": \"now\"\n  },\n \
+    \ \"timepicker\": {\n    \"refresh_intervals\": [\n      \"5s\",\n      \"10s\"\
+    ,\n      \"30s\",\n      \"1m\",\n      \"5m\"\n    ]\n  },\n  \"timezone\": \"\
+    browser\",\n  \"title\": \"eCommerce Microservices - Deep Dive & Performance\"\
+    ,\n  \"uid\": \"ecommerce-services\",\n  \"version\": 1\n}"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ecommerce-dashboard-logs
+  namespace: monitoring
+  labels:
+    grafana_dashboard: '1'
+    app.kubernetes.io/part-of: ecommerce-platform
+    app.kubernetes.io/managed-by: terraform
+  annotations:
+    grafana_folder: eCommerce Platform
+data:
+  ecommerce-logs.json: "{\n  \"annotations\": {\n    \"list\": []\n  },\n  \"editable\"\
+    : true,\n  \"fiscalYearStartMonth\": 0,\n  \"graphTooltip\": 1,\n  \"id\": null,\n\
+    \  \"links\": [\n    {\n      \"asDropdown\": false,\n      \"icon\": \"dashboard\"\
+    ,\n      \"includeVars\": true,\n      \"keepTime\": true,\n      \"tags\": [\n\
+    \        \"ecommerce\"\n      ],\n      \"targetBlank\": false,\n      \"title\"\
+    : \"eCommerce Navigation\",\n      \"type\": \"dashboards\"\n    }\n  ],\n  \"\
+    liveNow\": false,\n  \"panels\": [\n    {\n      \"collapsed\": false,\n     \
+    \ \"gridPos\": {\n        \"h\": 1,\n        \"w\": 24,\n        \"x\": 0,\n \
+    \       \"y\": 0\n      },\n      \"id\": 300,\n      \"title\": \"Log Metrics\
+    \ & Incident Signals\",\n      \"type\": \"row\"\n    },\n    {\n      \"datasource\"\
+    : {\n        \"type\": \"loki\",\n        \"uid\": \"P8E80F9AEF21F6940\"\n   \
+    \   },\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"color\"\
+    : {\n            \"mode\": \"thresholds\"\n          },\n          \"thresholds\"\
+    : {\n            \"mode\": \"absolute\",\n            \"steps\": [\n         \
+    \     {\n                \"color\": \"green\",\n                \"value\": null\n\
+    \              },\n              {\n                \"color\": \"#EAB839\",\n\
+    \                \"value\": 1\n              },\n              {\n           \
+    \     \"color\": \"red\",\n                \"value\": 10\n              }\n  \
+    \          ]\n          }\n        }\n      },\n      \"gridPos\": {\n       \
+    \ \"h\": 4,\n        \"w\": 8,\n        \"x\": 0,\n        \"y\": 1\n      },\n\
+    \      \"id\": 31,\n      \"options\": {\n        \"colorMode\": \"value\",\n\
+    \        \"graphMode\": \"area\",\n        \"justifyMode\": \"auto\",\n      \
+    \  \"orientation\": \"auto\",\n        \"reduceOptions\": {\n          \"calcs\"\
+    : [\n            \"lastNotNull\"\n          ],\n          \"fields\": \"\",\n\
+    \          \"values\": false\n        },\n        \"textMode\": \"auto\"\n   \
+    \   },\n      \"pluginVersion\": \"11.1.0\",\n      \"targets\": [\n        {\n\
+    \          \"datasource\": {\n            \"type\": \"loki\",\n            \"\
+    uid\": \"P8E80F9AEF21F6940\"\n          },\n          \"expr\": \"sum(count_over_time({namespace=\\\
+    \"default\\\", app=~\\\"$service\\\"} |~ \\\"(?i)(error|exception|fatal|failed)\\\
+    \" [1h])) or vector(0)\",\n          \"instant\": true,\n          \"legendFormat\"\
+    : \"Errors\",\n          \"refId\": \"A\"\n        }\n      ],\n      \"title\"\
+    : \"Error Logs (Past 1h)\",\n      \"type\": \"stat\"\n    },\n    {\n      \"\
+    datasource\": {\n        \"type\": \"loki\",\n        \"uid\": \"P8E80F9AEF21F6940\"\
+    \n      },\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"color\"\
+    : {\n            \"mode\": \"thresholds\"\n          },\n          \"thresholds\"\
+    : {\n            \"mode\": \"absolute\",\n            \"steps\": [\n         \
+    \     {\n                \"color\": \"green\",\n                \"value\": null\n\
+    \              },\n              {\n                \"color\": \"#EAB839\",\n\
+    \                \"value\": 10\n              },\n              {\n          \
+    \      \"color\": \"orange\",\n                \"value\": 50\n              }\n\
+    \            ]\n          }\n        }\n      },\n      \"gridPos\": {\n     \
+    \   \"h\": 4,\n        \"w\": 8,\n        \"x\": 8,\n        \"y\": 1\n      },\n\
+    \      \"id\": 32,\n      \"options\": {\n        \"colorMode\": \"value\",\n\
+    \        \"graphMode\": \"area\",\n        \"justifyMode\": \"auto\",\n      \
+    \  \"orientation\": \"auto\",\n        \"reduceOptions\": {\n          \"calcs\"\
+    : [\n            \"lastNotNull\"\n          ],\n          \"fields\": \"\",\n\
+    \          \"values\": false\n        },\n        \"textMode\": \"auto\"\n   \
+    \   },\n      \"pluginVersion\": \"11.1.0\",\n      \"targets\": [\n        {\n\
+    \          \"datasource\": {\n            \"type\": \"loki\",\n            \"\
+    uid\": \"P8E80F9AEF21F6940\"\n          },\n          \"expr\": \"sum(count_over_time({namespace=\\\
+    \"default\\\", app=~\\\"$service\\\"} |~ \\\"(?i)(warn|warning)\\\" [1h])) or\
+    \ vector(0)\",\n          \"instant\": true,\n          \"legendFormat\": \"Warnings\"\
+    ,\n          \"refId\": \"A\"\n        }\n      ],\n      \"title\": \"Warning\
+    \ Logs (Past 1h)\",\n      \"type\": \"stat\"\n    },\n    {\n      \"datasource\"\
+    : {\n        \"type\": \"loki\",\n        \"uid\": \"P8E80F9AEF21F6940\"\n   \
+    \   },\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"color\"\
+    : {\n            \"mode\": \"palette-classic\"\n          }\n        }\n     \
+    \ },\n      \"gridPos\": {\n        \"h\": 4,\n        \"w\": 8,\n        \"x\"\
+    : 16,\n        \"y\": 1\n      },\n      \"id\": 33,\n      \"options\": {\n \
+    \       \"colorMode\": \"value\",\n        \"graphMode\": \"area\",\n        \"\
+    justifyMode\": \"auto\",\n        \"orientation\": \"auto\",\n        \"reduceOptions\"\
+    : {\n          \"calcs\": [\n            \"lastNotNull\"\n          ],\n     \
+    \     \"fields\": \"\",\n          \"values\": false\n        },\n        \"textMode\"\
+    : \"auto\"\n      },\n      \"pluginVersion\": \"11.1.0\",\n      \"targets\"\
+    : [\n        {\n          \"datasource\": {\n            \"type\": \"loki\",\n\
+    \            \"uid\": \"P8E80F9AEF21F6940\"\n          },\n          \"expr\"\
+    : \"sum(count_over_time({namespace=\\\"default\\\", app=~\\\"$service\\\"} [1h]))\
+    \ or vector(0)\",\n          \"instant\": true,\n          \"legendFormat\": \"\
+    Total Lines\",\n          \"refId\": \"A\"\n        }\n      ],\n      \"title\"\
+    : \"Total Log Lines (Past 1h)\",\n      \"type\": \"stat\"\n    },\n    {\n  \
+    \    \"collapsed\": false,\n      \"gridPos\": {\n        \"h\": 1,\n        \"\
+    w\": 24,\n        \"x\": 0,\n        \"y\": 5\n      },\n      \"id\": 301,\n\
+    \      \"title\": \"Log Volumes & Error Frequency\",\n      \"type\": \"row\"\n\
+    \    },\n    {\n      \"datasource\": {\n        \"type\": \"loki\",\n       \
+    \ \"uid\": \"P8E80F9AEF21F6940\"\n      },\n      \"fieldConfig\": {\n       \
+    \ \"defaults\": {\n          \"custom\": {\n            \"drawStyle\": \"bars\"\
+    ,\n            \"lineWidth\": 1,\n            \"fillOpacity\": 50,\n         \
+    \   \"stacking\": {\n              \"group\": \"A\",\n              \"mode\":\
+    \ \"normal\"\n            }\n          },\n          \"unit\": \"short\"\n   \
+    \     }\n      },\n      \"gridPos\": {\n        \"h\": 7,\n        \"w\": 12,\n\
+    \        \"x\": 0,\n        \"y\": 6\n      },\n      \"id\": 34,\n      \"options\"\
+    : {\n        \"legend\": {\n          \"calcs\": [\n            \"sum\",\n   \
+    \         \"lastNotNull\"\n          ],\n          \"displayMode\": \"table\"\
+    ,\n          \"placement\": \"bottom\",\n          \"showLegend\": true\n    \
+    \    },\n        \"tooltip\": {\n          \"mode\": \"multi\"\n        }\n  \
+    \    },\n      \"pluginVersion\": \"11.1.0\",\n      \"targets\": [\n        {\n\
+    \          \"datasource\": {\n            \"type\": \"loki\",\n            \"\
+    uid\": \"P8E80F9AEF21F6940\"\n          },\n          \"expr\": \"sum by (app)\
+    \ (rate({namespace=\\\"default\\\", app=~\\\"$service\\\"}[1m]))\",\n        \
+    \  \"legendFormat\": \"{{app}}\",\n          \"refId\": \"A\"\n        }\n   \
+    \   ],\n      \"title\": \"Log Rate by Service (Lines / sec)\",\n      \"type\"\
+    : \"timeseries\"\n    },\n    {\n      \"datasource\": {\n        \"type\": \"\
+    loki\",\n        \"uid\": \"P8E80F9AEF21F6940\"\n      },\n      \"fieldConfig\"\
+    : {\n        \"defaults\": {\n          \"custom\": {\n            \"drawStyle\"\
+    : \"line\",\n            \"lineInterpolation\": \"smooth\",\n            \"lineWidth\"\
+    : 2,\n            \"fillOpacity\": 20\n          },\n          \"unit\": \"short\"\
+    \n        }\n      },\n      \"gridPos\": {\n        \"h\": 7,\n        \"w\"\
+    : 12,\n        \"x\": 12,\n        \"y\": 6\n      },\n      \"id\": 35,\n   \
+    \   \"options\": {\n        \"legend\": {\n          \"calcs\": [\n          \
+    \  \"sum\",\n            \"max\"\n          ],\n          \"displayMode\": \"\
+    table\",\n          \"placement\": \"bottom\",\n          \"showLegend\": true\n\
+    \        },\n        \"tooltip\": {\n          \"mode\": \"multi\"\n        }\n\
+    \      },\n      \"pluginVersion\": \"11.1.0\",\n      \"targets\": [\n      \
+    \  {\n          \"datasource\": {\n            \"type\": \"loki\",\n         \
+    \   \"uid\": \"P8E80F9AEF21F6940\"\n          },\n          \"expr\": \"sum by\
+    \ (app) (rate({namespace=\\\"default\\\", app=~\\\"$service\\\"} |~ \\\"(?i)(error|exception|fatal|failed)\\\
+    \" [1m]))\",\n          \"legendFormat\": \"{{app}} (Errors)\",\n          \"\
+    refId\": \"A\"\n        }\n      ],\n      \"title\": \"Error Rate over Time\"\
+    ,\n      \"type\": \"timeseries\"\n    },\n    {\n      \"collapsed\": false,\n\
+    \      \"gridPos\": {\n        \"h\": 1,\n        \"w\": 24,\n        \"x\": 0,\n\
+    \        \"y\": 13\n      },\n      \"id\": 302,\n      \"title\": \"Live Application\
+    \ Log Stream\",\n      \"type\": \"row\"\n    },\n    {\n      \"datasource\"\
+    : {\n        \"type\": \"loki\",\n        \"uid\": \"P8E80F9AEF21F6940\"\n   \
+    \   },\n      \"gridPos\": {\n        \"h\": 12,\n        \"w\": 24,\n       \
+    \ \"x\": 0,\n        \"y\": 14\n      },\n      \"id\": 36,\n      \"options\"\
+    : {\n        \"dedupStrategy\": \"none\",\n        \"enableLogDetails\": true,\n\
+    \        \"prettifyLogMessage\": true,\n        \"showCommonLabels\": false,\n\
+    \        \"showLabels\": true,\n        \"showTime\": true,\n        \"sortOrder\"\
+    : \"Descending\",\n        \"wrapLogMessage\": true\n      },\n      \"pluginVersion\"\
+    : \"11.1.0\",\n      \"targets\": [\n        {\n          \"datasource\": {\n\
+    \            \"type\": \"loki\",\n            \"uid\": \"P8E80F9AEF21F6940\"\n\
+    \          },\n          \"expr\": \"{namespace=\\\"default\\\", app=~\\\"$service\\\
+    \"} |= \\\"$search\\\"\",\n          \"refId\": \"A\"\n        }\n      ],\n \
+    \     \"title\": \"Live Logs Explorer (Click line to view TraceID link to Tempo)\"\
+    ,\n      \"type\": \"logs\"\n    },\n    {\n      \"collapsed\": false,\n    \
+    \  \"gridPos\": {\n        \"h\": 1,\n        \"w\": 24,\n        \"x\": 0,\n\
+    \        \"y\": 26\n      },\n      \"id\": 303,\n      \"title\": \"Filtered\
+    \ Errors & Exceptions Stream\",\n      \"type\": \"row\"\n    },\n    {\n    \
+    \  \"datasource\": {\n        \"type\": \"loki\",\n        \"uid\": \"P8E80F9AEF21F6940\"\
+    \n      },\n      \"gridPos\": {\n        \"h\": 10,\n        \"w\": 24,\n   \
+    \     \"x\": 0,\n        \"y\": 27\n      },\n      \"id\": 37,\n      \"options\"\
+    : {\n        \"dedupStrategy\": \"none\",\n        \"enableLogDetails\": true,\n\
+    \        \"prettifyLogMessage\": true,\n        \"showCommonLabels\": false,\n\
+    \        \"showLabels\": true,\n        \"showTime\": true,\n        \"sortOrder\"\
+    : \"Descending\",\n        \"wrapLogMessage\": true\n      },\n      \"pluginVersion\"\
+    : \"11.1.0\",\n      \"targets\": [\n        {\n          \"datasource\": {\n\
+    \            \"type\": \"loki\",\n            \"uid\": \"P8E80F9AEF21F6940\"\n\
+    \          },\n          \"expr\": \"{namespace=\\\"default\\\", app=~\\\"$service\\\
+    \"} |~ \\\"(?i)(error|exception|fatal|failed)\\\" |= \\\"$search\\\"\",\n    \
+    \      \"refId\": \"A\"\n        }\n      ],\n      \"title\": \"Errors & Exceptions\
+    \ Stream\",\n      \"type\": \"logs\"\n    }\n  ],\n  \"refresh\": \"10s\",\n\
+    \  \"schemaVersion\": 39,\n  \"tags\": [\n    \"ecommerce\",\n    \"logs\",\n\
+    \    \"loki\",\n    \"tempo\"\n  ],\n  \"templating\": {\n    \"list\": [\n  \
+    \    {\n        \"allValue\": \".*\",\n        \"current\": {\n          \"selected\"\
+    : true,\n          \"text\": \"All\",\n          \"value\": \"$__all\"\n     \
+    \   },\n        \"datasource\": {\n          \"type\": \"prometheus\",\n     \
+    \     \"uid\": \"prometheus\"\n        },\n        \"definition\": \"label_values(kube_pod_container_info{namespace=\\\
+    \"default\\\"}, container)\",\n        \"hide\": 0,\n        \"includeAll\": true,\n\
+    \        \"label\": \"Application / Service\",\n        \"multi\": true,\n   \
+    \     \"name\": \"service\",\n        \"options\": [],\n        \"query\": {\n\
+    \          \"query\": \"label_values(kube_pod_container_info{namespace=\\\"default\\\
+    \"}, container)\",\n          \"refId\": \"StandardVariableQuery\"\n        },\n\
+    \        \"refresh\": 1,\n        \"regex\": \"\",\n        \"skipUrlSync\": false,\n\
+    \        \"sort\": 1,\n        \"type\": \"query\"\n      },\n      {\n      \
+    \  \"current\": {\n          \"selected\": false,\n          \"text\": \"\",\n\
+    \          \"value\": \"\"\n        },\n        \"hide\": 0,\n        \"label\"\
+    : \"Search Keyword\",\n        \"name\": \"search\",\n        \"options\": [\n\
+    \          {\n            \"selected\": true,\n            \"text\": \"\",\n \
+    \           \"value\": \"\"\n          }\n        ],\n        \"query\": \"\"\
+    ,\n        \"skipUrlSync\": false,\n        \"type\": \"textbox\"\n      }\n \
+    \   ]\n  },\n  \"time\": {\n    \"from\": \"now-1h\",\n    \"to\": \"now\"\n \
+    \ },\n  \"timepicker\": {\n    \"refresh_intervals\": [\n      \"5s\",\n     \
+    \ \"10s\",\n      \"30s\",\n      \"1m\",\n      \"5m\"\n    ]\n  },\n  \"timezone\"\
+    : \"browser\",\n  \"title\": \"eCommerce Centralized Logs & Traces Explorer\"\
+    ,\n  \"uid\": \"ecommerce-logs\",\n  \"version\": 1\n}"

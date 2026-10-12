@@ -148,3 +148,31 @@ env:
     value: "order-service" # (Use the service's name)
 ```
 
+---
+
+## 8. Custom Application Dashboards
+
+Three production-ready dashboards are deployed under the **`eCommerce Platform`** folder in Grafana:
+
+1. **eCommerce Platform - Application Overview** (`ecommerce-overview`):
+   - Health status cards for all 8 microservices (UP/DOWN)
+   - Running vs desired replicas, pod restarts, total CPU, memory, and network throughput
+   - Service CPU & memory breakdown
+   - Dedicated database storage capacity & consumption (`gp3` PVCs)
+   - Log ingestion rates across services from Loki
+
+2. **eCommerce Microservices - Deep Dive & Performance** (`ecommerce-services`):
+   - Dynamic service dropdown (`$service`) and pod dropdown (`$pod`)
+   - CPU usage vs configured request & limit
+   - Memory working set vs configured request & limit
+   - CGroup CPU throttling seconds
+   - Network I/O (Rx/Tx)
+   - Active pod inventory & EKS node placement table
+
+3. **eCommerce Centralized Logs & Traces Explorer** (`ecommerce-logs`):
+   - Keyword search (`$search`) and service selector (`$service`)
+   - Error & warning rates over time from Loki
+   - Live streaming logs with automatic `TraceID` correlation links to Tempo
+   - Filtered exception and error stream
+
+
