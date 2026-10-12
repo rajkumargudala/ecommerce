@@ -174,7 +174,7 @@ export default function App() {
         body: JSON.stringify({
           orderId: order.id,
           amount: Number(order.total),
-          method: "CREDIT_CARD",
+          method: "CARD",
           recipient: user.email,
         }),
       });

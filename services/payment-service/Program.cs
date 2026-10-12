@@ -80,6 +80,8 @@ app.MapPost("/payments", async (PaymentCreate input, IHttpClientFactory factory)
         return Results.BadRequest(new { error = "orderId and positive amount are required" });
 
     var method = (input.Method ?? "CARD").ToUpperInvariant();
+    if (method is "CREDIT_CARD" or "DEBIT_CARD")
+        method = "CARD";
     if (method is not ("CARD" or "UPI" or "NETBANKING"))
         return Results.BadRequest(new { error = "method must be CARD, UPI or NETBANKING" });
 
