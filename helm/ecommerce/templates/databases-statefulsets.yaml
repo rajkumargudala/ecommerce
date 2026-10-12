@@ -1,0 +1,85 @@
+{{- $databases := list "auth" "catalog" "inventory" "order" "payment" "notification" "analytics" -}}
+{{- range $svc := $databases }}
+{{- $cfg := index $.Values $svc }}
+{{- if and $cfg.enabled $cfg.database.enabled }}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ $svc }}-db
+  labels:
+    app: {{ $svc }}-db
+    service: {{ $svc }}
+    {{- include "ecommerce.labels" $ | nindent 4 }}
+spec:
+  serviceName: {{ $cfg.database.host }}
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ $svc }}-db
+  template:
+    metadata:
+      labels:
+        app: {{ $svc }}-db
+        service: {{ $svc }}
+    spec:
+      containers:
+        - name: postgres
+          image: "{{ $.Values.databaseDefaults.image.repository }}:{{ $.Values.databaseDefaults.image.tag }}"
+          imagePullPolicy: {{ $.Values.databaseDefaults.image.pullPolicy }}
+          ports:
+            - containerPort: 5432
+              name: postgres
+          env:
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $svc }}-db-secret
+                  key: POSTGRES_DB
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $svc }}-db-secret
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $svc }}-db-secret
+                  key: POSTGRES_PASSWORD
+            - name: PGDATA
+              value: "/var/lib/postgresql/data/pgdata"
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          resources:
+            {{- toYaml (default $.Values.databaseDefaults.resources $cfg.database.resources) | nindent 12 }}
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - exec pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - exec pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"
+            initialDelaySeconds: 15
+            periodSeconds: 15
+            timeoutSeconds: 3
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: {{ $cfg.database.storageClassName | default $.Values.databaseDefaults.storageClassName | quote }}
+        resources:
+          requests:
+            storage: {{ $cfg.database.storageSize | default $.Values.databaseDefaults.storageSize }}
+{{- end }}
+{{- end }}
+

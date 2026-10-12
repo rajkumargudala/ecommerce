@@ -52,27 +52,32 @@ The application is packaged into a production-ready Helm chart located at [`helm
 
 ```text
 helm/ecommerce/
-├── Chart.yaml                  # Chart metadata and version (v1.0.0)
-├── values.yaml                 # Centralized configuration (images, tags, ports, resources)
+├── Chart.yaml                  # Chart metadata and version (v2.0.0)
+├── values.yaml                 # Centralized configuration (images, tags, ports, dedicated DBs, resources)
 └── templates/
     ├── _helpers.tpl            # Standardized Kubernetes labeling helpers
     ├── frontend-ingress.yaml   # AWS ALB Ingress template
-    ├── postgres-configmap.yaml # Database initialization script ConfigMap
-    ├── postgres-service.yaml   # Postgres headless ClusterIP service
-    ├── postgres-statefulset.yaml # Postgres StatefulSet with gp3 volume claim
-    └── <service>-deployment.yaml / <service>-service.yaml (for all 8 services)
+    ├── frontend-service.yaml   # Frontend ClusterIP service
+    ├── frontend-deployment.yaml # Frontend Web UI Deployment
+    ├── databases-secrets.yaml  # Dedicated Kubernetes Secrets for all 7 microservice databases
+    ├── databases-services.yaml # Dedicated ClusterIP services for all 7 databases
+    ├── databases-statefulsets.yaml # Dedicated StatefulSets with gp3 PVCs for all 7 databases
+    ├── pdb.yaml                # PodDisruptionBudgets for high-availability workloads
+    └── <service>-deployment.yaml / <service>-service.yaml (for all 7 backend microservices)
 ```
 
 ### Key Parameters in `values.yaml`
 
 | Value Key | Default Value | Description |
 |---|---|---|
-| `global.environment` | `dev` | Deployment environment name |
-| `global.ecrRegistry` | `877013879278.dkr.ecr.us-east-1.amazonaws.com` | Central container registry |
-| `postgres.storage.size` | `10Gi` | Persistent disk allocation for PostgreSQL |
-| `postgres.storage.storageClassName` | `gp3` | EBS CSI driver StorageClass |
-| `ingress.enabled` | `true` | Enables AWS ALB Ingress |
-| `ingress.alb.scheme` | `internet-facing` | Provision public Application Load Balancer |
+| `global.imageRegistry` | `877013879278.dkr.ecr.us-east-1.amazonaws.com` | Central container registry |
+| `global.imageRepository` | `ecommerce-platform` | Repository prefix for all services |
+| `databaseDefaults.storageClassName` | `gp3` | EBS CSI driver StorageClass for all dedicated DBs |
+| `databaseDefaults.storageSize` | `5Gi` | Default storage per dedicated database instance |
+| `<service>.database.enabled` | `true` | Provisions dedicated `<service>-db` StatefulSet and Service |
+| `<service>.database.host` | `<service>-db` | Dedicated database hostname (or external RDS endpoint) |
+| `podDisruptionBudget.enabled` | `true` | Enforces minimum available pods during cluster maintenance |
+| `frontend.ingress.enabled` | `true` | Enables AWS ALB Ingress |
 
 ---
 

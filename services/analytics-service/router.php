@@ -11,14 +11,14 @@ if ($_SERVER["REQUEST_METHOD"] === "OPTIONS") {
     exit;
 }
 
-$dbDsn = getenv("ANALYTICS_DB_DSN") ?: "pgsql:host=127.0.0.1;port=5432;dbname=analytics_db";
-$dbUser = getenv("DB_USER") ?: "microapp";
-$dbPassword = getenv("DB_PASSWORD") ?: "microapp123";
+$dbDsn = getenv("ANALYTICS_DB_DSN") ?: "pgsql:host=analytics-db;port=5432;dbname=analytics_db";
+$dbUser = getenv("DB_USER") ?: "analytics_user";
+$dbPassword = getenv("DB_PASSWORD") ?: "analytics_db_password_123";
 
-$catalogUrl = getenv("CATALOG_URL") ?: "http://localhost:8082";
-$inventoryUrl = getenv("INVENTORY_URL") ?: "http://localhost:8083";
-$orderUrl = getenv("ORDER_URL") ?: "http://localhost:8084";
-$paymentUrl = getenv("PAYMENT_URL") ?: "http://localhost:8085";
+$catalogUrl = getenv("CATALOG_URL") ?: "http://catalog-service:8082";
+$inventoryUrl = getenv("INVENTORY_URL") ?: "http://inventory-service:8083";
+$orderUrl = getenv("ORDER_URL") ?: "http://order-service:8084";
+$paymentUrl = getenv("PAYMENT_URL") ?: "http://payment-service:8085";
 
 function respond(int $status, array $payload): never {
     http_response_code($status);

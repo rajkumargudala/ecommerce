@@ -1,0 +1,24 @@
+{{- $databases := list "auth" "catalog" "inventory" "order" "payment" "notification" "analytics" -}}
+{{- range $svc := $databases }}
+{{- $cfg := index $.Values $svc }}
+{{- if and $cfg.enabled $cfg.database.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $cfg.database.host }}
+  labels:
+    app: {{ $svc }}-db
+    service: {{ $svc }}
+    {{- include "ecommerce.labels" $ | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ $cfg.database.port }}
+      targetPort: 5432
+      name: postgres
+  selector:
+    app: {{ $svc }}-db
+{{- end }}
+{{- end }}
+

@@ -6,7 +6,7 @@ const { Pool } = pg;
 const app = express();
 const pool = new Pool({
   connectionString: process.env.INVENTORY_DB_URL ||
-    "postgres://microapp:microapp123@127.0.0.1:5432/inventory_db"
+    "postgres://inventory_user:inventory_db_password_123@inventory-db:5432/inventory_db"
 });
 
 app.use(cors());

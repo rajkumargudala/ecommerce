@@ -15,11 +15,11 @@ app.UseCors();
 
 var connectionString =
     Environment.GetEnvironmentVariable("PAYMENT_DB_URL")
-    ?? "Host=127.0.0.1;Port=5432;Database=payment_db;Username=microapp;Password=microapp123";
+    ?? "Host=payment-db;Port=5432;Database=payment_db;Username=payment_user;Password=payment_db_password_123";
 
-var orderUrl = Environment.GetEnvironmentVariable("ORDER_URL") ?? "http://localhost:8084";
-var inventoryUrl = Environment.GetEnvironmentVariable("INVENTORY_URL") ?? "http://localhost:8083";
-var notificationUrl = Environment.GetEnvironmentVariable("NOTIFICATION_URL") ?? "http://localhost:8086";
+var orderUrl = Environment.GetEnvironmentVariable("ORDER_URL") ?? "http://order-service:8084";
+var inventoryUrl = Environment.GetEnvironmentVariable("INVENTORY_URL") ?? "http://inventory-service:8083";
+var notificationUrl = Environment.GetEnvironmentVariable("NOTIFICATION_URL") ?? "http://notification-service:8086";
 var dataSource = NpgsqlDataSource.Create(connectionString);
 
 await using (var conn = await dataSource.OpenConnectionAsync())

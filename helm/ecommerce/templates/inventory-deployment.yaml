@@ -8,6 +8,11 @@ metadata:
     {{- include "ecommerce.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.inventory.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       app: inventory-service
@@ -24,8 +29,18 @@ spec:
             - containerPort: {{ .Values.inventory.service.port }}
               name: http
           env:
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: inventory-db-secret
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: inventory-db-secret
+                  key: password
             - name: INVENTORY_DB_URL
-              value: "postgres://{{ .Values.postgres.dbUser }}:{{ .Values.postgres.dbPassword }}@postgres:5432/inventory_db"
+              value: "postgres://$(DB_USER):$(DB_PASSWORD)@{{ .Values.inventory.database.host }}:{{ .Values.inventory.database.port }}/{{ .Values.inventory.database.name }}"
           resources:
             {{- toYaml .Values.inventory.resources | nindent 12 }}
           readinessProbe:
@@ -43,4 +58,3 @@ spec:
             periodSeconds: 15
             timeoutSeconds: 3
 {{- end }}
-

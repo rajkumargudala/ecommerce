@@ -8,6 +8,11 @@ metadata:
     {{- include "ecommerce.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.payment.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       app: payment-service
@@ -24,8 +29,18 @@ spec:
             - containerPort: {{ .Values.payment.service.port }}
               name: http
           env:
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: payment-db-secret
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: payment-db-secret
+                  key: password
             - name: PAYMENT_DB_URL
-              value: "Host=postgres;Port=5432;Database=payment_db;Username={{ .Values.postgres.dbUser }};Password={{ .Values.postgres.dbPassword }}"
+              value: "Host={{ .Values.payment.database.host }};Port={{ .Values.payment.database.port }};Database={{ .Values.payment.database.name }};Username=$(DB_USER);Password=$(DB_PASSWORD)"
             - name: ORDER_URL
               value: "http://order-service:{{ .Values.order.service.port }}"
             - name: INVENTORY_URL
@@ -49,4 +64,3 @@ spec:
             periodSeconds: 15
             timeoutSeconds: 3
 {{- end }}
-

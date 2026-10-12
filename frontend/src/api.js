@@ -25,7 +25,8 @@ export async function request(url, options = {}) {
     throw new Error(
       data.error ||
       data.detail ||
-      `HTTP ${response.status}`
+      data.message ||
+      `HTTP ${response.status}: ${response.statusText || "Request failed"}`
     );
   }
 

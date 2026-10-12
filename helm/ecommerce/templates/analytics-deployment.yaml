@@ -8,6 +8,11 @@ metadata:
     {{- include "ecommerce.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.analytics.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       app: analytics-service
@@ -24,12 +29,18 @@ spec:
             - containerPort: {{ .Values.analytics.service.port }}
               name: http
           env:
-            - name: ANALYTICS_DB_DSN
-              value: "pgsql:host=postgres;port=5432;dbname=analytics_db"
             - name: DB_USER
-              value: {{ .Values.postgres.dbUser | quote }}
+              valueFrom:
+                secretKeyRef:
+                  name: analytics-db-secret
+                  key: username
             - name: DB_PASSWORD
-              value: {{ .Values.postgres.dbPassword | quote }}
+              valueFrom:
+                secretKeyRef:
+                  name: analytics-db-secret
+                  key: password
+            - name: ANALYTICS_DB_DSN
+              value: "pgsql:host={{ .Values.analytics.database.host }};port={{ .Values.analytics.database.port }};dbname={{ .Values.analytics.database.name }}"
             - name: CATALOG_URL
               value: "http://catalog-service:{{ .Values.catalog.service.port }}"
             - name: INVENTORY_URL
@@ -55,4 +66,3 @@ spec:
             periodSeconds: 15
             timeoutSeconds: 3
 {{- end }}
-

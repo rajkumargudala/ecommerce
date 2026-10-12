@@ -25,7 +25,7 @@ type Product struct {
 var db *sql.DB
 
 func main() {
-	dsn := getenv("CATALOG_DB_DSN", "postgres://microapp:microapp123@127.0.0.1:5432/catalog_db?sslmode=disable")
+	dsn := getenv("CATALOG_DB_DSN", "postgres://catalog_user:catalog_db_password_123@catalog-db:5432/catalog_db?sslmode=disable")
 	var err error
 	db, err = sql.Open("postgres", dsn)
 	if err != nil {

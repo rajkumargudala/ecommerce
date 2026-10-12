@@ -1,0 +1,22 @@
+{{- if .Values.podDisruptionBudget.enabled }}
+{{- $services := list "auth" "catalog" "inventory" "order" "payment" "notification" "analytics" "frontend" }}
+{{- range $svc := $services }}
+{{- $cfg := index $.Values $svc }}
+{{- if and $cfg.enabled (gt (int $cfg.replicaCount) 1) }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ if eq $svc "frontend" }}frontend{{ else }}{{ $svc }}-service{{ end }}-pdb
+  labels:
+    app: {{ if eq $svc "frontend" }}frontend{{ else }}{{ $svc }}-service{{ end }}
+    {{- include "ecommerce.labels" $ | nindent 4 }}
+spec:
+  minAvailable: {{ $.Values.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      app: {{ if eq $svc "frontend" }}frontend{{ else }}{{ $svc }}-service{{ end }}
+{{- end }}
+{{- end }}
+{{- end }}
+

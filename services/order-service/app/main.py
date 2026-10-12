@@ -11,11 +11,11 @@ from pydantic import BaseModel, EmailStr, Field
 
 DB_DSN = os.getenv(
     "ORDER_DB_DSN",
-    "dbname=order_db user=microapp password=microapp123 host=127.0.0.1 port=5432",
+    "dbname=order_db user=order_user password=order_db_password_123 host=order-db port=5432",
 )
-CATALOG_URL = os.getenv("CATALOG_URL", "http://localhost:8082")
-INVENTORY_URL = os.getenv("INVENTORY_URL", "http://localhost:8083")
-NOTIFICATION_URL = os.getenv("NOTIFICATION_URL", "http://localhost:8086")
+CATALOG_URL = os.getenv("CATALOG_URL", "http://catalog-service:8082")
+INVENTORY_URL = os.getenv("INVENTORY_URL", "http://inventory-service:8083")
+NOTIFICATION_URL = os.getenv("NOTIFICATION_URL", "http://notification-service:8086")
 
 app = FastAPI(title="DevOps Shack Order Service", version="1.0.0")
 app.add_middleware(
