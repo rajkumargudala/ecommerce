@@ -101,7 +101,7 @@ app.MapPost("/payments", async (PaymentCreate input, IHttpClientFactory factory)
     if (decimal.Round(orderTotal, 2) != decimal.Round(input.Amount, 2))
         return Results.BadRequest(new { error = $"payment amount must equal authoritative order total {orderTotal:0.00}" });
 
-    var orderRecipient = order.GetProperty("user_email").GetString() ?? "admin@devopsshack.com";
+    var orderRecipient = order.GetProperty("user_email").GetString() ?? "admin@admin.com";
     var items = order.GetProperty("items")
         .EnumerateArray()
         .Select(x => new InventoryItem(
@@ -222,7 +222,7 @@ app.MapPost("/payments/{id:long}/refund", async (long id, IHttpClientFactory fac
         return Results.Conflict(new { error = "could not load order for refund" });
 
     var order = await orderResponse.Content.ReadFromJsonAsync<JsonElement>();
-    var orderRecipient = order.GetProperty("user_email").GetString() ?? "admin@devopsshack.com";
+    var orderRecipient = order.GetProperty("user_email").GetString() ?? "admin@admin.com";
     var items = order.GetProperty("items")
         .EnumerateArray()
         .Select(x => new InventoryItem(

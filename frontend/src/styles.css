@@ -1747,3 +1747,21 @@ aside.sidebar {
   .login-showcase { display: none; }
   main.workspace { padding: 18px; }
 }
+
+/* Make checkout text readable on the light Flipkart-inspired surfaces. */
+.review-form input, .review-form textarea, .review-form select,
+.checkout-field input, .promotion-entry input {
+  color: #212121;
+  background: #ffffff;
+  border-color: #cfd6e0;
+  font-size: 14px;
+  font-weight: 400;
+}
+.review-form input::placeholder, .review-form textarea::placeholder,
+.checkout-field input::placeholder, .promotion-entry input::placeholder {
+  color: #777f8b;
+  opacity: 1;
+}
+.checkout-address > strong { color: #212121; }
+.checkout-field { color: #454d5e; font-size: 11px; letter-spacing: .25px; }
+.checkout-promotion small { color: #657186; }

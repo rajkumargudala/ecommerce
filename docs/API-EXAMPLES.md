@@ -29,7 +29,7 @@ curl -X POST http://localhost:8083/inventory/reserve \
 ```bash
 curl -X POST http://localhost:8086/notifications \
   -H "Content-Type: application/json" \
-  -d '{"recipient":"admin@devopsshack.com","type":"INFO","subject":"Manual notification","message":"Notification service works."}'
+  -d '{"recipient":"admin@admin.com","type":"INFO","subject":"Manual notification","message":"Notification service works."}'
 ```
 
 ## Manage a cart

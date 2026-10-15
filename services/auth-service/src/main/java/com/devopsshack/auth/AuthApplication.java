@@ -39,18 +39,41 @@ public class AuthApplication {
           expires_at TIMESTAMPTZ NOT NULL
         )
       """);
-      Integer count = jdbc.queryForObject(
-        "SELECT COUNT(*) FROM app_users WHERE email=?",
+      Integer newAdminCount = jdbc.queryForObject(
+        "SELECT COUNT(*) FROM app_users WHERE lower(email)=lower(?)",
         Integer.class,
-        "admin@devopsshack.com"
+        "admin@admin.com"
+      );
+      if (newAdminCount != null && newAdminCount == 0) {
+        jdbc.update(
+          "UPDATE app_users SET name=?, email=? WHERE lower(email)=lower(?) AND role='ADMIN'",
+          "admin",
+          "admin@admin.com",
+          "admin@devopsshack.com"
+        );
+      }
+      Integer count = jdbc.queryForObject(
+        "SELECT COUNT(*) FROM app_users WHERE lower(email)=lower(?)",
+        Integer.class,
+        "admin@admin.com"
       );
       if (count != null && count == 0) {
         jdbc.update(
-          "INSERT INTO app_users(name,email,password_hash,role) VALUES(?,?,?,?)",
-          "DevOps Shack Admin",
-          "admin@devopsshack.com",
+          "INSERT INTO app_users(name,email,password_hash,role) VALUES(?,?,?,?) ON CONFLICT (email) DO NOTHING",
+          "admin",
+          "admin@admin.com",
           encoder.encode("admin123"),
           "ADMIN"
+        );
+      } else {
+        jdbc.update(
+          "UPDATE app_users SET name=? WHERE lower(email)=lower(?) AND role='ADMIN'",
+          "admin",
+          "admin@admin.com"
+        );
+        jdbc.update(
+          "DELETE FROM app_users WHERE lower(email)=lower(?) AND role='ADMIN'",
+          "admin@devopsshack.com"
         );
       }
     };

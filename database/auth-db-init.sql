@@ -15,8 +15,5 @@ CREATE TABLE IF NOT EXISTS user_sessions (
   expires_at TIMESTAMPTZ NOT NULL
 );
 
--- Seed initial admin user
-INSERT INTO app_users(name, email, password_hash, role)
-VALUES('DevOps Shack Admin', 'admin@devopsshack.com', '$2a$10$N.Z0/O1wW1fN6nS7gB6v.uvkFkJYjF6z.c4h7j6P1r0G0w1x2y3z4', 'ADMIN')
-ON CONFLICT (email) DO NOTHING;
+-- AuthApplication creates the initial admin with a BCrypt password hash at startup.
 

@@ -169,10 +169,19 @@ export default function App() {
     if (!user) return;
     const token = localStorage.getItem("poly_token");
     if (token) {
-      request(`${URLs.auth}/auth/me?token=${encodeURIComponent(token)}`).catch(() => {
-        localStorage.clear();
-        setUser(null);
-      });
+      request(`${URLs.auth}/auth/me?token=${encodeURIComponent(token)}`)
+        .then((profile) => {
+          setUser((current) => {
+            const refreshed = { ...current, id: profile.id, name: profile.name, email: profile.email, role: profile.role };
+            if (current.name === refreshed.name && current.email === refreshed.email && current.role === refreshed.role) return current;
+            localStorage.setItem("poly_user", JSON.stringify(refreshed));
+            return refreshed;
+          });
+        })
+        .catch(() => {
+          localStorage.clear();
+          setUser(null);
+        });
     }
     loadAll();
   }, [user]);
@@ -506,7 +515,6 @@ export default function App() {
 
   const adminNavItems = [
     { key: "overview", icon: "◈", label: "Overview" },
-    { key: "microservices", icon: "✦", label: "New Microservices", badge: 5 },
     { key: "catalog", icon: "◫", label: "Product Catalog" },
     { key: "promotions", icon: "%", label: "Promotions", badge: promotions.length || null },
     { key: "orders", icon: "◎", label: "Orders & Cart", badge: orders.length || null },
@@ -514,7 +522,6 @@ export default function App() {
     { key: "payments", icon: "◇", label: "Payment Ledger" },
     { key: "notifications", icon: "◌", label: "Notifications", badge: unreadCount || null },
     { key: "analytics", icon: "⌁", label: "Analytics BI" },
-    { key: "topology", icon: "☸", label: "EKS & Dedicated DBs" },
   ];
   const navItems = isAdmin ? adminNavItems : [
     { key: "catalog", icon: "◫", label: "Shop" },
@@ -726,16 +733,6 @@ export default function App() {
           ))}
         </nav>
 
-        <div className="sidebar-footer">
-          <div className="eks-badge">
-            <div className="eks-badge-header">
-              <span className="pulse-dot" />
-              AWS EKS + ArgoCD
-            </div>
-            <small>GitOps Active · Helm v2.0</small>
-            <small>12 Services · 12 Dedicated DBs</small>
-          </div>
-        </div>
       </aside>
 
       {/* Main Workspace Area */}
@@ -748,7 +745,7 @@ export default function App() {
 
           <div className="header-actions">
             {isAdmin && <button className="btn btn-secondary" onClick={loadAll} disabled={isRefreshing}>
-              {isRefreshing ? "↻ Refreshing..." : "↻ Refresh Services"}
+              {isRefreshing ? "↻ Refreshing..." : "↻ Refresh Store Data"}
             </button>}
 
             <button className="cart-btn" onClick={() => setIsCartOpen(true)}>
@@ -787,7 +784,7 @@ export default function App() {
           <>
             <section className="hero-card card">
               <div className="hero-content">
-                <span className="pill pill-blue">ENTERPRISE CLOUD ARCHITECTURE</span>
+                <span className="pill pill-blue">LUMAIRE STORE OVERVIEW</span>
                 <h2>Shop products. Checkout. Track delivery.</h2>
                 <p>
                   Search the catalog, read and write product reviews, save items to your cart, apply promotions, and follow shipment tracking from your orders.
@@ -802,38 +799,6 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="hero-diagram">
-                <div className="diagram-header">
-                  <span>DECOUPLED DATABASE ARCHITECTURE</span>
-                  <span>100% ISOLATED</span>
-                </div>
-                <div className="diagram-grid">
-                  <div className="diagram-node">
-                    <strong>Auth :8081</strong>
-                    <small>➔ auth-db:5432</small>
-                  </div>
-                  <div className="diagram-node">
-                    <strong>Catalog :8082</strong>
-                    <small>➔ catalog-db:5432</small>
-                  </div>
-                  <div className="diagram-node">
-                    <strong>Inventory :8083</strong>
-                    <small>➔ inventory-db:5432</small>
-                  </div>
-                  <div className="diagram-node">
-                    <strong>Orders :8084</strong>
-                    <small>➔ order-db:5432</small>
-                  </div>
-                  <div className="diagram-node">
-                    <strong>Payments :8085</strong>
-                    <small>➔ payment-db:5432</small>
-                  </div>
-                  <div className="diagram-node">
-                    <strong>Notifications :8086</strong>
-                    <small>➔ notification-db:5432</small>
-                  </div>
-                </div>
-              </div>
             </section>
 
             <div className="metrics-grid">
@@ -866,7 +831,7 @@ export default function App() {
                 <div className="metric-body">
                   <span>ACTIVE SKUS</span>
                   <strong>{analytics.products ?? products.length}</strong>
-                  <small>Go Catalog Service</small>
+                  <small>Products in your store</small>
                 </div>
               </div>
 
@@ -877,13 +842,12 @@ export default function App() {
                 <div className="metric-body">
                   <span>LOW STOCK ALERTS</span>
                   <strong>{analytics.low_stock_count ?? lowStockCount}</strong>
-                  <small>Node.js Inventory Service</small>
+                  <small>Items that need restocking</small>
                 </div>
               </div>
             </div>
 
-            <div className="cols-2">
-              <section className="card">
+            <section className="card">
                 <div className="panel-head">
                   <div>
                     <span className="eyebrow">RECENT ACTIVITY</span>
@@ -902,23 +866,8 @@ export default function App() {
                   advanceShipment={advanceShipmentStatus}
                   isAdmin
                 />
-              </section>
-
-              <section className="card">
-                <div className="panel-head">
-                  <div>
-                    <span className="eyebrow">CLUSTER HEALTH</span>
-                    <h3>Microservices & Dedicated DB Matrix</h3>
-                  </div>
-                </div>
-                <DedicatedDatabaseMatrix healthStatus={healthStatus} />
-              </section>
-            </div>
+            </section>
           </>
-        )}
-
-        {tab === "microservices" && (
-          <MicroservicesView onNavigate={setTab} />
         )}
 
         {tab === "promotions" && (
@@ -989,8 +938,6 @@ export default function App() {
           />
         )}
 
-        {/* Tab 8: EKS & Dedicated DB Topology */}
-        {tab === "topology" && <TopologyView healthStatus={healthStatus} />}
       </main>
     </div>
   );
@@ -999,122 +946,6 @@ export default function App() {
 // ----------------------------------------------------
 // Sub-views & Components
 // ----------------------------------------------------
-
-function DedicatedDatabaseMatrix({ healthStatus }) {
-  const serviceMatrix = [
-    { name: "Auth Service", lang: "Java 21", port: 8081, dbHost: "auth-db:5432", dbName: "auth_db", key: "auth" },
-    { name: "Catalog Service", lang: "Go 1.22", port: 8082, dbHost: "catalog-db:5432", dbName: "catalog_db", key: "catalog" },
-    { name: "Inventory Service", lang: "Node 20", port: 8083, dbHost: "inventory-db:5432", dbName: "inventory_db", key: "inventory" },
-    { name: "Order Service", lang: "Python 3.11", port: 8084, dbHost: "order-db:5432", dbName: "order_db", key: "orders" },
-    { name: "Payment Service", lang: "C# .NET 8", port: 8085, dbHost: "payment-db:5432", dbName: "payment_db", key: "payments" },
-    { name: "Notify Service", lang: "Ruby 3.2", port: 8086, dbHost: "notification-db:5432", dbName: "notification_db", key: "notifications" },
-    { name: "Analytics Service", lang: "PHP 8.2", port: 8087, dbHost: "analytics-db:5432", dbName: "analytics_db", key: "analytics" },
-    { name: "Cart Service", lang: "Python 3.11 / FastAPI", port: 8088, dbHost: "cart-db:5432", dbName: "cart_db", key: "cart" },
-    { name: "Shipping Service", lang: "Python 3.11 / FastAPI", port: 8089, dbHost: "shipping-db:5432", dbName: "shipping_db", key: "shipping" },
-    { name: "Reviews Service", lang: "Python 3.11 / FastAPI", port: 8090, dbHost: "reviews-db:5432", dbName: "reviews_db", key: "reviews" },
-    { name: "Promotions Service", lang: "Python 3.11 / FastAPI", port: 8091, dbHost: "promotions-db:5432", dbName: "promotions_db", key: "promotions" },
-    { name: "Search Service", lang: "Python 3.11 / FastAPI", port: 8092, dbHost: "search-db:5432", dbName: "search_db", key: "search" },
-  ];
-
-  return (
-    <div className="matrix-grid">
-      {serviceMatrix.map((item) => (
-        <div key={item.name} className="matrix-row">
-          <span
-            className="pulse-dot"
-            style={{
-              background: healthStatus[item.key] === false ? "var(--accent-danger)" : "var(--accent-success)",
-              boxShadow: `0 0 8px ${healthStatus[item.key] === false ? "var(--accent-danger)" : "var(--accent-success)"}`,
-            }}
-          />
-          <strong style={{ color: "#fff" }}>{item.name}</strong>
-          <span className="tag-lang">{item.lang}</span>
-          <code style={{ fontSize: 11, color: "var(--text-muted)" }}>:{item.port}</code>
-          <span className="matrix-db-pill">{item.dbHost}</span>
-          <span className="pill pill-green" style={{ fontSize: 9 }}>gp3</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function MicroservicesView({ onNavigate }) {
-  const services = [
-    {
-      key: "cart",
-      icon: "🛒",
-      name: "Cart Service",
-      purpose: "Your cart is saved to your account and stays available when you return.",
-      feature: "Shop & manage cart",
-      tab: "catalog",
-    },
-    {
-      key: "shipping",
-      icon: "🚚",
-      name: "Shipping Service",
-      purpose: "Add a delivery address at checkout and follow each order’s tracking updates.",
-      feature: "View delivery tracking",
-      tab: "orders",
-    },
-    {
-      key: "reviews",
-      icon: "★",
-      name: "Reviews Service",
-      purpose: "Read ratings from shoppers and write a review on any product.",
-      feature: "Read or write product reviews",
-      tab: "catalog",
-    },
-    {
-      key: "promotions",
-      icon: "%",
-      name: "Promotions Service",
-      purpose: "Browse current offers and apply eligible discounts to an order.",
-      feature: "Browse and apply offers",
-      tab: "promotions",
-    },
-    {
-      key: "search",
-      icon: "⌕",
-      name: "Search Service",
-      purpose: "Find products by name, category, and description from the catalog search box.",
-      feature: "Search the product catalog",
-      tab: "catalog",
-    },
-  ];
-
-  return (
-    <section className="card microservices-page">
-      <div className="panel-head">
-        <div>
-          <span className="eyebrow">VERSION 2 · FIVE SHOPPER FEATURES</span>
-          <h3>Shop with the new services</h3>
-        </div>
-        <button className="btn btn-primary btn-sm" onClick={() => onNavigate("catalog")}>Browse products →</button>
-      </div>
-      <p className="microservices-intro">
-        Use these features while shopping. Each action below opens the store page connected to its service.
-      </p>
-      <div className="microservice-grid">
-        {services.map((service) => {
-          return (
-            <article className="microservice-card" key={service.key}>
-              <div className="microservice-card-head">
-                <span className="microservice-icon" aria-hidden="true">{service.icon}</span>
-              </div>
-              <div>
-                <h4>{service.name}</h4>
-                <p>{service.purpose}</p>
-              </div>
-              <button className="btn btn-primary btn-sm microservice-feature-link" onClick={() => onNavigate(service.tab)}>
-                {service.feature} →
-              </button>
-            </article>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
 
 function PromotionsView({ promotions, onChoosePromotion, onBrowseCatalog }) {
   return (
@@ -1939,86 +1770,6 @@ function AnalyticsView({ analytics, snapshots, onSaveSnapshot }) {
         </section>
       </div>
     </>
-  );
-}
-
-function TopologyView({ healthStatus }) {
-  const nodes = [
-    { name: "Auth Service", lang: "Java 21 / Spring Boot", port: 8081, dbHost: "auth-db:5432", dbName: "auth_db", pvc: "auth-db-data (5Gi gp3)", key: "auth" },
-    { name: "Catalog Service", lang: "Go 1.22", port: 8082, dbHost: "catalog-db:5432", dbName: "catalog_db", pvc: "catalog-db-data (5Gi gp3)", key: "catalog" },
-    { name: "Inventory Service", lang: "Node.js 20 / Express", port: 8083, dbHost: "inventory-db:5432", dbName: "inventory_db", pvc: "inventory-db-data (5Gi gp3)", key: "inventory" },
-    { name: "Order Service", lang: "Python 3.11 / FastAPI", port: 8084, dbHost: "order-db:5432", dbName: "order_db", pvc: "order-db-data (5Gi gp3)", key: "orders" },
-    { name: "Payment Service", lang: "C# / ASP.NET Core 8", port: 8085, dbHost: "payment-db:5432", dbName: "payment_db", pvc: "payment-db-data (5Gi gp3)", key: "payments" },
-    { name: "Notification Service", lang: "Ruby 3.2 / Sinatra", port: 8086, dbHost: "notification-db:5432", dbName: "notification_db", pvc: "notification-db-data (5Gi gp3)", key: "notifications" },
-    { name: "Analytics Service", lang: "PHP 8.2", port: 8087, dbHost: "analytics-db:5432", dbName: "analytics_db", pvc: "analytics-db-data (5Gi gp3)", key: "analytics" },
-    { name: "Cart Service", lang: "Python 3.11 / FastAPI", port: 8088, dbHost: "cart-db:5432", dbName: "cart_db", pvc: "cart-db-data (5Gi gp3)", key: "cart" },
-    { name: "Shipping Service", lang: "Python 3.11 / FastAPI", port: 8089, dbHost: "shipping-db:5432", dbName: "shipping_db", pvc: "shipping-db-data (5Gi gp3)", key: "shipping" },
-    { name: "Reviews Service", lang: "Python 3.11 / FastAPI", port: 8090, dbHost: "reviews-db:5432", dbName: "reviews_db", pvc: "reviews-db-data (5Gi gp3)", key: "reviews" },
-    { name: "Promotions Service", lang: "Python 3.11 / FastAPI", port: 8091, dbHost: "promotions-db:5432", dbName: "promotions_db", pvc: "promotions-db-data (5Gi gp3)", key: "promotions" },
-    { name: "Search Service", lang: "Python 3.11 / FastAPI", port: 8092, dbHost: "search-db:5432", dbName: "search_db", pvc: "search-db-data (5Gi gp3)", key: "search" },
-  ];
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <div className="card">
-        <div className="panel-head">
-          <div>
-            <span className="eyebrow">AWS EKS ARCHITECTURAL MAP</span>
-            <h3>Decoupled Microservices & Dedicated Database Topology</h3>
-          </div>
-          <span className="pill pill-green">GitOps Reconciled via ArgoCD</span>
-        </div>
-        <p style={{ color: "var(--text-muted)", fontSize: 13, marginBottom: 20 }}>
-          Every microservice deployed onto Amazon EKS runs in an isolated container and connects exclusively to its own
-          dedicated StatefulSet database instance. Persistent state is bound to independent AWS EBS gp3 volumes.
-        </p>
-
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 16 }}>
-          {nodes.map((n) => (
-            <div
-              key={n.name}
-              style={{
-                background: "var(--bg-sidebar)",
-                border: "1px solid var(--border-subtle)",
-                borderRadius: "var(--radius-md)",
-                padding: 18,
-                display: "flex",
-                flexDirection: "column",
-                gap: 10,
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <strong style={{ fontSize: 15, color: "#fff" }}>{n.name}</strong>
-                <span className="pill pill-blue">{n.lang}</span>
-              </div>
-
-              <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                Cluster Port: <code style={{ color: "var(--text-main)" }}>:{n.port}</code>
-              </div>
-
-              <div
-                style={{
-                  background: "var(--bg-app)",
-                  padding: 12,
-                  borderRadius: 8,
-                  border: "1px solid var(--border-card)",
-                }}
-              >
-                <div style={{ fontSize: 10, textTransform: "uppercase", color: "var(--text-faint)", fontWeight: 800 }}>
-                  DEDICATED POSTGRES DATABASE
-                </div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--accent-cyan)", margin: "4px 0" }}>
-                  {n.dbHost}
-                </div>
-                <div style={{ fontSize: 11, color: "var(--text-faint)" }}>
-                  Database: <code>{n.dbName}</code> · Storage: <code>{n.pvc}</code>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
   );
 }
 

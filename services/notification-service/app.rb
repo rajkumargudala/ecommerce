@@ -39,7 +39,7 @@ if count.zero?
   connection.exec_params(
     "INSERT INTO notifications(recipient,type,subject,message) VALUES($1,$2,$3,$4)",
     [
-      "admin@devopsshack.com",
+      "admin@admin.com",
       "WELCOME",
       "Polyglot platform is ready",
       "Ruby Notification Service is ready to receive order and payment events."

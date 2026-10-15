@@ -14,7 +14,7 @@ CREATE INDEX IF NOT EXISTS idx_notifications_recipient ON notifications(lower(re
 -- Seed welcome notification
 INSERT INTO notifications(recipient, type, subject, message)
 VALUES(
-  'admin@devopsshack.com',
+  'admin@admin.com',
   'WELCOME',
   'Polyglot platform is ready',
   'Ruby Notification Service is ready with its dedicated PostgreSQL database on EKS.'
