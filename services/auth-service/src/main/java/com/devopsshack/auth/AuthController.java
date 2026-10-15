@@ -70,6 +70,15 @@ public class AuthController {
     if (!encoder.matches(supplied, (String)user.get("password_hash"))) {
       throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "invalid credentials");
     }
+    String requestedType = req.accountType()==null ? "CUSTOMER" : req.accountType().trim().toUpperCase();
+    if (!"CUSTOMER".equals(requestedType) && !"ADMIN".equals(requestedType)) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "accountType must be CUSTOMER or ADMIN");
+    }
+    String actualRole = String.valueOf(user.get("role"));
+    if (("ADMIN".equals(requestedType) && !"ADMIN".equals(actualRole))
+        || (!"ADMIN".equals(requestedType) && "ADMIN".equals(actualRole))) {
+      throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "invalid credentials for this account type");
+    }
 
     String token = UUID.randomUUID().toString();
     jdbc.update(
@@ -105,5 +114,5 @@ public class AuthController {
   }
 
   public record RegisterRequest(String name, String email, String password) {}
-  public record LoginRequest(String email, String password) {}
+  public record LoginRequest(String email, String password, String accountType) {}
 }

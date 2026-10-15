@@ -21,7 +21,8 @@ function hydrateCartItems(items = [], products = []) {
 
 export default function App() {
   const [user, setUser] = useState(() => JSON.parse(localStorage.getItem("poly_user") || "null"));
-  const [tab, setTab] = useState("overview");
+  const [tab, setTab] = useState(() => JSON.parse(localStorage.getItem("poly_user") || "null")?.role === "ADMIN" ? "overview" : "catalog");
+  const isAdmin = user?.role === "ADMIN";
 
   // Domain data states
   const [products, setProducts] = useState([]);
@@ -71,7 +72,7 @@ export default function App() {
     const services = [
       { name: "Catalog", key: "catalog", url: `${URLs.catalog}/products`, setter: setProducts },
       { name: "Inventory", key: "inventory", url: `${URLs.inventory}/inventory`, setter: setInventory },
-      { name: "Orders", key: "orders", url: `${URLs.orders}/orders`, setter: setOrders },
+      { name: "Orders", key: "orders", url: `${URLs.orders}/orders` },
       { name: "Payments", key: "payments", url: `${URLs.payments}/payments`, setter: setPayments },
       {
         name: "Notifications",
@@ -81,7 +82,7 @@ export default function App() {
       },
       { name: "Analytics", key: "analytics", url: `${URLs.analytics}/analytics/summary`, setter: setAnalytics },
       { name: "Cart", key: "cart", url: `${URLs.cart}/carts/${customerId}` },
-      { name: "Shipping", key: "shipping", url: `${URLs.shipping}/shipments`, setter: setShipments },
+      { name: "Shipping", key: "shipping", url: `${URLs.shipping}/shipments` },
       { name: "Reviews", key: "reviews", url: `${URLs.reviews}/health` },
       { name: "Promotions", key: "promotions", url: `${URLs.promotions}/promotions`, setter: setPromotions },
       { name: "Search", key: "search", url: `${URLs.search}/health` },
@@ -131,6 +132,17 @@ export default function App() {
       if (res.status === "fulfilled") services[idx].setter?.(res.value);
     });
 
+    const orderResult = results[services.findIndex((service) => service.key === "orders")];
+    const visibleOrders = orderResult.status === "fulfilled"
+      ? (user.role === "ADMIN" ? orderResult.value : orderResult.value.filter((order) => String(order.user_email || "").toLowerCase() === user.email.toLowerCase()))
+      : [];
+    if (orderResult.status === "fulfilled") setOrders(visibleOrders);
+    const shipmentResult = results[services.findIndex((service) => service.key === "shipping")];
+    if (shipmentResult.status === "fulfilled") {
+      const visibleOrderIds = new Set(visibleOrders.map((order) => Number(order.id)));
+      setShipments(user.role === "ADMIN" ? shipmentResult.value : shipmentResult.value.filter((shipment) => visibleOrderIds.has(Number(shipment.orderId))));
+    }
+
     try {
       await request(`${URLs.auth}/health`);
       newHealth.auth = true;
@@ -164,6 +176,12 @@ export default function App() {
     }
     loadAll();
   }, [user]);
+
+  useEffect(() => {
+    if (!isAdmin && ["overview", "microservices", "inventory", "payments", "analytics", "topology"].includes(tab)) {
+      setTab("catalog");
+    }
+  }, [isAdmin, tab]);
 
   if (!user) {
     return (
@@ -486,7 +504,7 @@ export default function App() {
   const totalCartUnits = cart.reduce((s, x) => s + x.quantity, 0);
   const cartSubtotal = cart.reduce((s, x) => s + x.price * x.quantity, 0);
 
-  const navItems = [
+  const adminNavItems = [
     { key: "overview", icon: "◈", label: "Overview" },
     { key: "microservices", icon: "✦", label: "New Microservices", badge: 5 },
     { key: "catalog", icon: "◫", label: "Product Catalog" },
@@ -497,6 +515,11 @@ export default function App() {
     { key: "notifications", icon: "◌", label: "Notifications", badge: unreadCount || null },
     { key: "analytics", icon: "⌁", label: "Analytics BI" },
     { key: "topology", icon: "☸", label: "EKS & Dedicated DBs" },
+  ];
+  const navItems = isAdmin ? adminNavItems : [
+    { key: "catalog", icon: "◫", label: "Shop" },
+    { key: "promotions", icon: "%", label: "Offers", badge: promotions.length || null },
+    { key: "orders", icon: "◎", label: "My Orders", badge: orders.length || null },
   ];
 
   return (
@@ -682,10 +705,10 @@ export default function App() {
       {/* Sidebar Navigation */}
       <aside className="sidebar">
         <div className="brand">
-          <div className="brand-icon">DS</div>
+          <div className="brand-icon">L</div>
           <div className="brand-meta">
-            <strong>Polyglot Commerce</strong>
-            <small>DevOps Shack · AWS EKS</small>
+            <strong>Lumaire</strong>
+            <small>{isAdmin ? "Store administration" : "A little more lovely"}</small>
           </div>
         </div>
 
@@ -719,14 +742,14 @@ export default function App() {
       <main className="workspace">
         <header className="top-header">
           <div className="header-title-box">
-            <span className="eyebrow">SHOP · CART · ORDERS · DELIVERY</span>
+            <span className="eyebrow">{isAdmin ? "LUMAIRE · STORE MANAGEMENT" : "DISCOVER · SHOP · ENJOY"}</span>
             <h1>{navItems.find((x) => x.key === tab)?.label}</h1>
           </div>
 
           <div className="header-actions">
-            <button className="btn btn-secondary" onClick={loadAll} disabled={isRefreshing}>
-              {isRefreshing ? "↻ Refreshing..." : "↻ Refresh Cluster"}
-            </button>
+            {isAdmin && <button className="btn btn-secondary" onClick={loadAll} disabled={isRefreshing}>
+              {isRefreshing ? "↻ Refreshing..." : "↻ Refresh Services"}
+            </button>}
 
             <button className="cart-btn" onClick={() => setIsCartOpen(true)}>
               <span>🛒</span>
@@ -877,6 +900,7 @@ export default function App() {
                   cancel={cancelOrder}
                   advance={advanceOrderStatus}
                   advanceShipment={advanceShipmentStatus}
+                  isAdmin
                 />
               </section>
 
@@ -909,6 +933,8 @@ export default function App() {
             customerId={user.email}
             onAddToCart={addToCart}
             onOpenNewProductModal={() => setIsNewProductOpen(true)}
+            isAdmin={isAdmin}
+            onBrowsePromotions={() => setTab("promotions")}
           />
         )}
 
@@ -922,6 +948,7 @@ export default function App() {
             onAdvance={advanceOrderStatus}
             onAdvanceShipment={advanceShipmentStatus}
             onOpenCart={() => setIsCartOpen(true)}
+            isAdmin={isAdmin}
           />
         )}
 
@@ -1121,7 +1148,7 @@ function PromotionsView({ promotions, onChoosePromotion, onBrowseCatalog }) {
   );
 }
 
-function CatalogView({ products, inventory, customerId, onAddToCart, onOpenNewProductModal }) {
+function CatalogView({ products, inventory, customerId, onAddToCart, onOpenNewProductModal, isAdmin, onBrowsePromotions }) {
   const [selectedCategory, setSelectedCategory] = useState("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("DEFAULT");
@@ -1178,6 +1205,16 @@ function CatalogView({ products, inventory, customerId, onAddToCart, onOpenNewPr
 
   return (
     <>
+      {!isAdmin && <section className="storefront-hero">
+        <div className="storefront-copy">
+          <span className="eyebrow">THE LUMAIRE COLLECTION</span>
+          <h2>Make room for<br />something lovely.</h2>
+          <p>Thoughtful finds for your home, your everyday, and everything in between.</p>
+          <button className="btn btn-primary" onClick={onBrowsePromotions}>Explore this week’s offers →</button>
+        </div>
+        <div className="storefront-art" aria-hidden="true"><div className="art-disc" /><div className="art-vase">✦</div><div className="art-orbit" /></div>
+        <span className="storefront-note">CURATED FOR YOU · NEW SEASON</span>
+      </section>}
       <div className="catalog-toolbar">
         <div className="category-pills">
           {categories.map((cat) => (
@@ -1205,9 +1242,7 @@ function CatalogView({ products, inventory, customerId, onAddToCart, onOpenNewPr
             <option value="PRICE_DESC">Price: High to Low</option>
             <option value="NAME_ASC">Name: A to Z</option>
           </select>
-          <button className="btn btn-primary" onClick={onOpenNewProductModal}>
-            + Add Product
-          </button>
+          {isAdmin && <button className="btn btn-primary" onClick={onOpenNewProductModal}>+ Add Product</button>}
         </div>
       </div>
 
@@ -1372,7 +1407,7 @@ function ProductReviews({ productId, customerId }) {
   );
 }
 
-function OrdersView({ orders, shipments, onPay, onCancel, onAdvance, onAdvanceShipment, onOpenCart }) {
+function OrdersView({ orders, shipments, onPay, onCancel, onAdvance, onAdvanceShipment, onOpenCart, isAdmin }) {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [orderSearch, setOrderSearch] = useState("");
 
@@ -1423,13 +1458,14 @@ function OrdersView({ orders, shipments, onPay, onCancel, onAdvance, onAdvanceSh
           cancel={onCancel}
           advance={onAdvance}
           advanceShipment={onAdvanceShipment}
+          isAdmin={isAdmin}
         />
       </div>
     </>
   );
 }
 
-function OrderTable({ orders, shipments = [], pay, cancel, advance, advanceShipment }) {
+function OrderTable({ orders, shipments = [], pay, cancel, advance, advanceShipment, isAdmin = false }) {
   const getPill = (status) => {
     switch (status) {
       case "PAID":
@@ -1487,7 +1523,7 @@ function OrderTable({ orders, shipments = [], pay, cancel, advance, advanceShipm
                   <div className="order-shipment">
                     <small>{shipment.status.replaceAll("_", " ")}</small>
                     <code>{shipment.trackingNumber}</code>
-                    {nextShipmentStatus && advanceShipment && (
+                    {isAdmin && nextShipmentStatus && advanceShipment && (
                       <button className="shipment-advance" onClick={() => advanceShipment(shipment)}>
                         Mark {nextShipmentStatus.replaceAll("_", " ").toLowerCase()} →
                       </button>
@@ -1516,12 +1552,12 @@ function OrderTable({ orders, shipments = [], pay, cancel, advance, advanceShipm
                       </button>
                     </>
                   )}
-                  {o.status === "PAID" && (
+                  {isAdmin && o.status === "PAID" && (
                     <button className="btn btn-secondary btn-sm" onClick={() => advance(o)}>
                       Mark Processing →
                     </button>
                   )}
-                  {o.status === "PROCESSING" && (
+                  {isAdmin && o.status === "PROCESSING" && (
                     <button className="btn btn-primary btn-sm" onClick={() => advance(o)}>
                       Ship Order ✈
                     </button>
@@ -2093,7 +2129,8 @@ function NewProductModal({ onClose, onCreate }) {
 
 function Login({ onLogin }) {
   const [mode, setMode] = useState("login");
-  const [form, setForm] = useState({ name: "", email: "admin@devopsshack.com", password: "admin123" });
+  const [accountType, setAccountType] = useState("CUSTOMER");
+  const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -2110,7 +2147,7 @@ function Login({ onLogin }) {
       }
       const data = await request(`${URLs.auth}/auth/login`, {
         method: "POST",
-        body: JSON.stringify({ email: form.email, password: form.password }),
+        body: JSON.stringify({ email: form.email, password: form.password, accountType: mode === "register" ? "CUSTOMER" : accountType }),
       });
       onLogin(data.user, data.token);
     } catch (err) {
@@ -2124,39 +2161,42 @@ function Login({ onLogin }) {
     <div className="login-container">
       <div className="login-showcase">
         <div className="brand" style={{ border: "none" }}>
-          <div className="brand-icon">DS</div>
+          <div className="brand-icon">L</div>
           <div className="brand-meta">
-            <strong style={{ fontSize: 18 }}>DevOps Shack</strong>
-            <small>Enterprise Polyglot Platform</small>
+            <strong style={{ fontSize: 18 }}>Lumaire</strong>
+            <small>Find your everyday favorite</small>
           </div>
         </div>
 
         <div>
-          <span className="pill pill-blue">AWS EKS GITOPS PLATFORM</span>
-          <h1>Twelve Microservices.<br />Twelve Dedicated Databases.</h1>
-          <p style={{ color: "var(--text-muted)", fontSize: 15, lineHeight: 1.7, maxWidth: 520 }}>
-            An enterprise microservices platform deployed onto AWS EKS with Helm and ArgoCD GitOps reconciliation.
-            Version 2 adds cart, shipping, reviews, promotions, and product search services.
-          </p>
-
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 24 }}>
-            {["Java 21", "Go 1.22", "Node.js 20", "Python 3.11", "C# .NET 8", "Ruby 3.2", "PHP 8.2"].map((lang) => (
-              <span key={lang} className="tag-lang" style={{ padding: "6px 12px", fontSize: 11 }}>
-                {lang}
-              </span>
-            ))}
+          <span className="pill pill-blue">THE LUMAIRE EDIT</span>
+          <h1>Good things,<br />beautifully found.</h1>
+          <p className="showcase-copy">A considered collection for the moments, rituals, and little upgrades that make a day feel like yours.</p>
+          <div className="showcase-scene" aria-hidden="true">
+            <div className="scene-glow" />
+            <div className="scene-orbit orbit-one" />
+            <div className="scene-orbit orbit-two" />
+            <div className="scene-product product-one"><span>✦</span><small>THE EVERYDAY</small></div>
+            <div className="scene-product product-two"><span>◌</span><small>SOFT FORM</small></div>
+            <div className="scene-product product-three"><span>✧</span><small>NEW FAVORITE</small></div>
           </div>
         </div>
 
         <div style={{ fontSize: 12, color: "var(--text-faint)" }}>
-          Production Ready · Managed by Terraform & ArgoCD
+          Thoughtfully selected · Made for your everyday
         </div>
       </div>
 
       <div className="login-form-box">
         <div className="login-card">
-          <span className="eyebrow">ENTERPRISE ACCESS</span>
-          <h2>{mode === "login" ? "Sign in to Control Center" : "Create Developer Account"}</h2>
+          <span className="eyebrow">WELCOME TO LUMAIRE</span>
+          <h2>{mode === "login" ? (accountType === "ADMIN" ? "Store team sign in" : "Sign in to your account") : "Create your account"}</h2>
+          <p className="login-intro">{mode === "register" ? "Join us and keep your favorites, basket, and orders together." : accountType === "ADMIN" ? "Authorized store team access." : "Your next favorite is just around the corner."}</p>
+
+          <div className="account-switch" role="group" aria-label="Choose account type">
+            <button type="button" className={accountType === "CUSTOMER" ? "selected" : ""} onClick={() => { setAccountType("CUSTOMER"); setMode("login"); setError(""); }}>Customer</button>
+            <button type="button" className={accountType === "ADMIN" ? "selected" : ""} onClick={() => { setAccountType("ADMIN"); setMode("login"); setError(""); }}>Store admin</button>
+          </div>
 
           {error && (
             <div
@@ -2177,10 +2217,10 @@ function Login({ onLogin }) {
           <form onSubmit={submit}>
             {mode === "register" && (
               <div className="form-group">
-                <label>Full Name</label>
+                  <label>Your name</label>
                 <input
                   required
-                  placeholder="Platform Engineer"
+                  placeholder="Your name"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                 />
@@ -2188,18 +2228,18 @@ function Login({ onLogin }) {
             )}
 
             <div className="form-group">
-              <label>Work Email</label>
+              <label>Email address</label>
               <input
                 required
                 type="email"
-                placeholder="admin@devopsshack.com"
+                placeholder="you@example.com"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
               />
             </div>
 
             <div className="form-group">
-              <label>Password</label>
+              <label>Password <span className="field-hint">At least 6 characters</span></label>
               <input
                 required
                 type="password"
@@ -2215,7 +2255,7 @@ function Login({ onLogin }) {
               style={{ width: "100%", padding: 12, marginTop: 8 }}
               disabled={loading}
             >
-              {loading ? "Authenticating..." : mode === "login" ? "Sign In →" : "Register & Sign In →"}
+              {loading ? "Please wait..." : mode === "login" ? (accountType === "ADMIN" ? "Sign in to store →" : "Sign in →") : "Create account →"}
             </button>
 
             <button
@@ -2228,17 +2268,11 @@ function Login({ onLogin }) {
                 fontSize: 12,
                 fontWeight: 600,
               }}
-              onClick={() => setMode(mode === "login" ? "register" : "login")}
+              onClick={() => { setMode(mode === "login" ? "register" : "login"); setAccountType("CUSTOMER"); setError(""); }}
             >
-              {mode === "login" ? "Need an account? Register" : "Already registered? Sign In"}
+              {mode === "login" ? "New to Lumaire? Create an account" : "Already have an account? Sign in"}
             </button>
           </form>
-
-          <div className="demo-account-box">
-            <strong>Default Credentials:</strong>
-            <div>Email: <code>admin@devopsshack.com</code></div>
-            <div>Password: <code>admin123</code></div>
-          </div>
         </div>
       </div>
     </div>
