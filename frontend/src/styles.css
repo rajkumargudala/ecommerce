@@ -565,6 +565,128 @@ header.top-header {
   border-color: var(--border-card);
 }
 
+.microservices-intro {
+  color: var(--text-muted);
+  font-size: 13px;
+  margin: -4px 0 20px;
+  max-width: 780px;
+}
+
+.microservice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(245px, 1fr));
+  gap: 14px;
+}
+
+.microservice-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  padding: 18px;
+  background: var(--bg-sidebar);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+}
+
+.microservice-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.microservice-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(59, 130, 246, 0.12);
+  color: #93c5fd;
+  font-size: 20px;
+}
+
+.microservice-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 9px;
+  border-radius: var(--radius-pill);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.microservice-status.online {
+  color: #6ee7b7;
+  background: rgba(16, 185, 129, 0.12);
+}
+
+.microservice-status.unavailable {
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.microservice-status.checking {
+  color: #fcd34d;
+  background: rgba(245, 158, 11, 0.12);
+}
+
+.microservice-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.microservice-card h4 {
+  color: #fff;
+  font-size: 15px;
+  margin-bottom: 5px;
+}
+
+.microservice-card > div > p {
+  color: var(--text-muted);
+  font-size: 12px;
+  min-height: 36px;
+}
+
+.microservice-details {
+  display: grid;
+  gap: 9px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.microservice-details div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+.microservice-details dt {
+  color: var(--text-faint);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+}
+
+.microservice-details dd {
+  min-width: 0;
+  color: var(--text-main);
+  font-size: 11px;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.microservice-health-link {
+  align-self: flex-start;
+  margin-top: auto;
+  text-decoration: none;
+}
+
 .matrix-db-pill {
   font-family: var(--font-mono);
   font-size: 11px;

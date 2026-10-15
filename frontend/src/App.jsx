@@ -287,6 +287,7 @@ export default function App() {
 
   const navItems = [
     { key: "overview", icon: "◈", label: "Overview" },
+    { key: "microservices", icon: "✦", label: "New Microservices", badge: 5 },
     { key: "catalog", icon: "◫", label: "Product Catalog" },
     { key: "orders", icon: "◎", label: "Orders & Cart", badge: orders.length || null },
     { key: "inventory", icon: "▦", label: "Inventory", badge: lowStockCount ? `${lowStockCount} low` : null },
@@ -436,7 +437,7 @@ export default function App() {
               AWS EKS + ArgoCD
             </div>
             <small>GitOps Active · Helm v2.0</small>
-            <small>7 Decoupled Dedicated DBs</small>
+            <small>12 Services · 12 Dedicated DBs</small>
           </div>
         </div>
       </aside>
@@ -493,15 +494,15 @@ export default function App() {
                 <span className="pill pill-blue">ENTERPRISE CLOUD ARCHITECTURE</span>
                 <h2>Production Polyglot Microservices on AWS EKS</h2>
                 <p>
-                  Seven independent microservices, each operating its own dedicated PostgreSQL database with fault domain
-                  isolation, automated GitOps reconciliation via ArgoCD, and Helm package management.
+                  Twelve independent microservices, each operating its own dedicated PostgreSQL database. The five new
+                  Version 2 services are ready to inspect in the service center.
                 </p>
                 <div className="hero-actions">
                   <button className="btn btn-primary" onClick={() => setTab("catalog")}>
                     Explore Catalog →
                   </button>
-                  <button className="btn btn-secondary" onClick={() => setTab("topology")}>
-                    Inspect EKS Topology
+                  <button className="btn btn-secondary" onClick={() => setTab("microservices")}>
+                    View 5 New Services →
                   </button>
                 </div>
               </div>
@@ -618,6 +619,14 @@ export default function App() {
           </>
         )}
 
+        {tab === "microservices" && (
+          <MicroservicesView
+            healthStatus={healthStatus}
+            isRefreshing={isRefreshing}
+            onRefresh={loadAll}
+          />
+        )}
+
         {/* Tab 2: Product Catalog */}
         {tab === "catalog" && (
           <CatalogView
@@ -722,6 +731,116 @@ function DedicatedDatabaseMatrix({ healthStatus }) {
         </div>
       ))}
     </div>
+  );
+}
+
+function MicroservicesView({ healthStatus, isRefreshing, onRefresh }) {
+  const services = [
+    {
+      key: "cart",
+      icon: "🛒",
+      name: "Cart Service",
+      purpose: "Stores each customer’s cart independently of the web session.",
+      port: 8088,
+      database: "cart-db",
+      api: "/api/cart",
+      example: "GET /carts/{customer_id}",
+    },
+    {
+      key: "shipping",
+      icon: "🚚",
+      name: "Shipping Service",
+      purpose: "Creates shipments and tracks delivery status for orders.",
+      port: 8089,
+      database: "shipping-db",
+      api: "/api/shipping",
+      example: "POST /shipments",
+    },
+    {
+      key: "reviews",
+      icon: "★",
+      name: "Reviews Service",
+      purpose: "Accepts product reviews and returns rating summaries.",
+      port: 8090,
+      database: "reviews-db",
+      api: "/api/reviews",
+      example: "GET /reviews?productId=1",
+    },
+    {
+      key: "promotions",
+      icon: "%",
+      name: "Promotions Service",
+      purpose: "Validates discount codes and records promotion redemptions.",
+      port: 8091,
+      database: "promotions-db",
+      api: "/api/promotions",
+      example: "POST /promotions/validate",
+    },
+    {
+      key: "search",
+      icon: "⌕",
+      name: "Search Service",
+      purpose: "Indexes product details and searches the product catalog.",
+      port: 8092,
+      database: "search-db",
+      api: "/api/search",
+      example: "GET /search?q=keyboard",
+    },
+  ];
+
+  return (
+    <section className="card microservices-page">
+      <div className="panel-head">
+        <div>
+          <span className="eyebrow">VERSION 2 · FIVE NEW BACKEND SERVICES</span>
+          <h3>Microservices Center</h3>
+        </div>
+        <button className="btn btn-secondary btn-sm" onClick={onRefresh} disabled={isRefreshing}>
+          {isRefreshing ? "↻ Checking..." : "↻ Check health"}
+        </button>
+      </div>
+      <p className="microservices-intro">
+        Each service runs independently in EKS with its own database. Use the API route shown on a card from the app,
+        or open its health endpoint to confirm it is responding.
+      </p>
+      <div className="microservice-grid">
+        {services.map((service) => {
+          const isOnline = healthStatus[service.key] === true;
+          const isUnavailable = healthStatus[service.key] === false;
+          const status = isOnline ? "Online" : isUnavailable ? "Unavailable" : "Checking";
+
+          return (
+            <article className="microservice-card" key={service.key}>
+              <div className="microservice-card-head">
+                <span className="microservice-icon" aria-hidden="true">{service.icon}</span>
+                <span className={`microservice-status ${isOnline ? "online" : isUnavailable ? "unavailable" : "checking"}`}>
+                  <span className="microservice-status-dot" />
+                  {status}
+                </span>
+              </div>
+              <div>
+                <h4>{service.name}</h4>
+                <p>{service.purpose}</p>
+              </div>
+              <dl className="microservice-details">
+                <div><dt>API route</dt><dd><code>{service.api}</code></dd></div>
+                <div><dt>Example</dt><dd><code>{service.example}</code></dd></div>
+                <div><dt>Database</dt><dd><code>{service.database}</code></dd></div>
+                <div><dt>Cluster port</dt><dd><code>{service.port}</code></dd></div>
+              </dl>
+              <a
+                className="btn btn-secondary btn-sm microservice-health-link"
+                href={`${service.api}/health`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Open health endpoint ↗
+              </a>
+            </article>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
@@ -1562,10 +1681,10 @@ function Login({ onLogin }) {
 
         <div>
           <span className="pill pill-blue">AWS EKS GITOPS PLATFORM</span>
-          <h1>Seven Polyglot Services.<br />Seven Dedicated Databases.</h1>
+          <h1>Twelve Microservices.<br />Twelve Dedicated Databases.</h1>
           <p style={{ color: "var(--text-muted)", fontSize: 15, lineHeight: 1.7, maxWidth: 520 }}>
-            An enterprise microservices platform written across 7 major programming languages, deployed onto AWS EKS with
-            Helm and ArgoCD GitOps reconciliation, and engineered with Database-per-Service fault isolation.
+            An enterprise microservices platform deployed onto AWS EKS with Helm and ArgoCD GitOps reconciliation.
+            Version 2 adds cart, shipping, reviews, promotions, and product search services.
           </p>
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 24 }}>
