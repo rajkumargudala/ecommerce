@@ -8,9 +8,10 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/rajkumargudala/ecommerce.git
-    targetRevision: master
-    path: helm/ecommerce
+    repoURL: https://github.com/rajkumargudala/ecommerce-gitops
+
+    targetRevision: main
+    path: helm/
     helm:
       valueFiles:
         - values.yaml
