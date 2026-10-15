@@ -68,6 +68,13 @@ In accordance with cloud-native microservice best practices, every service owns 
 | **Payment Service** | C# / ASP.NET Core 8 | `payment-db:5432` | `payment_db` | `payment_user` | `5Gi` (StatefulSet) |
 | **Notification Service** | Ruby 3.2 / Sinatra | `notification-db:5432` | `notification_db` | `notification_user` | `5Gi` (StatefulSet) |
 | **Analytics Service** | PHP 8.2 | `analytics-db:5432` | `analytics_db` | `analytics_user` | `5Gi` (StatefulSet) |
+| **Cart Service** | Python 3.11 / FastAPI | `cart-db:5432` | `cart_db` | `cart_user` | `5Gi` (StatefulSet) |
+| **Shipping Service** | Python 3.11 / FastAPI | `shipping-db:5432` | `shipping_db` | `shipping_user` | `5Gi` (StatefulSet) |
+| **Reviews Service** | Python 3.11 / FastAPI | `reviews-db:5432` | `reviews_db` | `reviews_user` | `5Gi` (StatefulSet) |
+| **Promotions Service** | Python 3.11 / FastAPI | `promotions-db:5432` | `promotions_db` | `promotions_user` | `5Gi` (StatefulSet) |
+| **Search Service** | Python 3.11 / FastAPI | `search-db:5432` | `search_db` | `search_user` | `5Gi` (StatefulSet) |
+
+The added service ports are `8088` (cart), `8089` (shipping), `8090` (reviews), `8091` (promotions), and `8092` (search). Nginx exposes them under `/api/cart`, `/api/shipping`, `/api/reviews`, `/api/promotions`, and `/api/search`.
 
 ### Database Features:
 - **Zero Cross-Database Coupling**: Services communicate strictly via REST APIs; direct cross-database queries are physically impossible.
@@ -85,7 +92,7 @@ Developer Git Push (main)
         ▼
 GitHub Actions CI (.github/workflows/ci.yml)
   1. Validates and lints Helm Chart (helm lint & helm template)
-  2. Builds and pushes 8 multi-stage Docker images to Amazon ECR in parallel
+  2. Builds and pushes 13 Docker images to Amazon ECR in parallel
   3. Updates image tags in helm/ecommerce/values.yaml
   4. Commits updated manifest with [skip ci]
         │
@@ -100,9 +107,9 @@ ArgoCD Controller (argocd/application.yaml)
         │
         ▼
 AWS EKS Cluster
-  - RollingUpdate deployments for all 8 microservices
+  - RollingUpdate deployments for 12 backend microservices and the frontend
   - High availability via PodDisruptionBudgets (PDB)
-  - 7 dedicated PostgreSQL StatefulSets with persistent gp3 storage
+  - 12 dedicated PostgreSQL StatefulSets with persistent gp3 storage
   - AWS Application Load Balancer Ingress
 ```
 

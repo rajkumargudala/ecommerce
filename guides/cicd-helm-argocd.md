@@ -10,16 +10,16 @@ The pipeline automates chart validation, parallel multi-language container build
 
 ```text
 +---------------------+
-|   Developer Push    | (Pushes to the app repository's 'master' branch)
+|   Developer Push    | (Pushes to 'master' or the isolated 'feature' branch)
 +----------+----------+
            |
            v
 +---------------------+
 |   GitHub Actions    |  .github/workflows/ci.yml
 |                     |  1. Lint & Validate Helm Chart (helm lint & template)
-|   CI Pipeline       |  2. Build & Push 8 Docker Images in parallel to Amazon ECR
+|   CI Pipeline       |  2. Build & Push 13 Docker Images in parallel to Amazon ECR
 |                     |  3. Update image tags in ecommerce-gitops/helm/values.yaml
-|                     |  4. Commit updated values to ecommerce-gitops 'main' [skip ci]
+|                     |  4. Push tags to 'main' for master or 'version-2' for feature
 +----------+----------+
            |
            v
@@ -40,7 +40,8 @@ The pipeline automates chart validation, parallel multi-language container build
 +--------------------------------------------------------------+
 |                        AWS EKS Cluster                       |
 |  - Ingress: AWS Application Load Balancer                    |
-|  - Pods: 8 microservices (RollingUpdate) + PostgreSQL 16     |
+|  - Pods: 12 backend services + frontend (RollingUpdate)      |
+|  - Databases: 12 dedicated PostgreSQL 16 instances            |
 +--------------------------------------------------------------+
 ```
 
@@ -59,11 +60,11 @@ helm/ecommerce/
     ├── frontend-ingress.yaml   # AWS ALB Ingress template
     ├── frontend-service.yaml   # Frontend ClusterIP service
     ├── frontend-deployment.yaml # Frontend Web UI Deployment
-    ├── databases-secrets.yaml  # Dedicated Kubernetes Secrets for all 7 microservice databases
-    ├── databases-services.yaml # Dedicated ClusterIP services for all 7 databases
-    ├── databases-statefulsets.yaml # Dedicated StatefulSets with gp3 PVCs for all 7 databases
+    ├── databases-secrets.yaml  # Dedicated Kubernetes Secrets for all 12 service databases
+    ├── databases-services.yaml # Dedicated ClusterIP services for all 12 databases
+    ├── databases-statefulsets.yaml # Dedicated StatefulSets with gp3 PVCs for all 12 databases
     ├── pdb.yaml                # PodDisruptionBudgets for high-availability workloads
-    └── <service>-deployment.yaml / <service>-service.yaml (for all 7 backend microservices)
+    └── additional-services.yaml (cart, shipping, reviews, promotions, and search)
 ```
 
 ### Key Parameters in `values.yaml`
@@ -89,7 +90,7 @@ The workflow consists of three automated stages:
 Runs `helm lint helm/ecommerce` and `helm template` to prevent invalid templates or indentation errors from reaching the repository.
 
 ### Stage 2: `build-and-push` (Matrix Strategy)
-Compiles and builds Docker images in parallel for all 8 microservices using Docker Buildx and GitHub Actions cache:
+Compiles and builds Docker images in parallel for all 13 images using Docker Buildx and GitHub Actions cache:
 - `auth-service` (Java 21 / Maven)
 - `catalog-service` (Go)
 - `inventory-service` (Node.js)
@@ -97,12 +98,17 @@ Compiles and builds Docker images in parallel for all 8 microservices using Dock
 - `payment-service` (C# .NET)
 - `notification-service` (Ruby)
 - `analytics-service` (PHP)
+- `cart-service` (Python FastAPI)
+- `shipping-service` (Python FastAPI)
+- `reviews-service` (Python FastAPI)
+- `promotions-service` (Python FastAPI)
+- `search-service` (Python FastAPI)
 - `frontend` (React Vite)
 
-Images are pushed to ECR tagged with both `:latest` and `:<service>-<GIT_SHA>`.
+Images are pushed to ECR tagged with both `:<service>` and `:<service>-<GIT_SHA>`.
 
 ### Stage 3: `update-git-manifests` (GitOps Automated Tagging)
-Checks out `rajkumargudala/ecommerce-gitops` on `main`, updates the eight service tags in `helm/values.yaml` to the image tags built from `${{ github.sha }}`, and pushes the change with `[skip ci]`.
+For `master`, checks out `rajkumargudala/ecommerce-gitops` on `main`; for `feature`, checks out `version-2`. It updates existing service tags and configured new-service tags in `helm/values.yaml` to the image tags built from `${{ github.sha }}`, then pushes the change with `[skip ci]`.
 
 ### Required GitHub Repository Secrets
 To enable the workflow, configure the following secrets under **Settings > Secrets and variables > Actions**:

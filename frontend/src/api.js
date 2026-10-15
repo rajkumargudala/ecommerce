@@ -6,6 +6,11 @@ export const URLs = {
   payments: "/api/payments",
   notifications: "/api/notifications",
   analytics: "/api/analytics",
+  cart: "/api/cart",
+  shipping: "/api/shipping",
+  reviews: "/api/reviews",
+  promotions: "/api/promotions",
+  search: "/api/search",
 };
 
 export async function request(url, options = {}) {

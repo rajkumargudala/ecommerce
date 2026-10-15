@@ -15,6 +15,11 @@ In this production-ready architecture, each microservice operates with its own *
 | **Payment Service** | C# / .NET 8 | `payment-db:5432` | `payment_db` | `payment_user` | `payment-db-init.sql` | `5Gi` |
 | **Notification Service** | Ruby 3.2 / Sinatra | `notification-db:5432` | `notification_db` | `notification_user` | `notification-db-init.sql` | `5Gi` |
 | **Analytics Service** | PHP 8.2 | `analytics-db:5432` | `analytics_db` | `analytics_user` | `analytics-db-init.sql` | `5Gi` |
+| **Cart Service** | Python 3.11 / FastAPI | `cart-db:5432` | `cart_db` | `cart_user` | `cart-db-init.sql` | `5Gi` |
+| **Shipping Service** | Python 3.11 / FastAPI | `shipping-db:5432` | `shipping_db` | `shipping_user` | `shipping-db-init.sql` | `5Gi` |
+| **Reviews Service** | Python 3.11 / FastAPI | `reviews-db:5432` | `reviews_db` | `reviews_user` | `reviews-db-init.sql` | `5Gi` |
+| **Promotions Service** | Python 3.11 / FastAPI | `promotions-db:5432` | `promotions_db` | `promotions_user` | `promotions-db-init.sql` | `5Gi` |
+| **Search Service** | Python 3.11 / FastAPI | `search-db:5432` | `search_db` | `search_user` | `search-db-init.sql` | `5Gi` |
 
 ---
 
@@ -25,4 +30,6 @@ Each dedicated database is deployed on AWS EKS via **Helm** as a dedicated `Stat
 - Passwords and usernames are stored in dedicated Kubernetes Secrets (`<service>-db-secret`).
 - Individual ClusterIP services (`auth-db`, `catalog-db`, etc.) isolate network access within the cluster.
 - External databases (e.g. AWS RDS PostgreSQL instances) can be connected by simply configuring `database.enabled: false` and providing `database.host: <rds-endpoint>` in `helm/ecommerce/values.yaml`.
+
+The five added services create their tables idempotently at application startup. The matching SQL files document the schemas and support manual setup. The Promotions Service seeds `WELCOME10` and `SAVE5` if those codes do not already exist.
 

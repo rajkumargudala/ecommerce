@@ -17,7 +17,7 @@ echo " AWS EKS Polyglot Microservices Health Check"
 echo " Target Endpoint: ${BASE_URL}"
 echo "=========================================================="
 
-services=("auth" "catalog" "inventory" "orders" "payments" "notifications" "analytics")
+services=("auth" "catalog" "inventory" "orders" "payments" "notifications" "analytics" "cart" "shipping" "reviews" "promotions" "search")
 all_healthy=true
 
 for svc in "${services[@]}"; do

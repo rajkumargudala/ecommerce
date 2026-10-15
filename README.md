@@ -15,10 +15,15 @@ An enterprise, cloud-native eCommerce platform built using **seven distinct prog
   - `payment-db` (Payment Service - C# .NET)
   - `notification-db` (Notification Service - Ruby)
   - `analytics-db` (Analytics Service - PHP)
+  - `cart-db` (Cart Service - Python FastAPI)
+  - `shipping-db` (Shipping Service - Python FastAPI)
+  - `reviews-db` (Product Reviews Service - Python FastAPI)
+  - `promotions-db` (Promotions Service - Python FastAPI)
+  - `search-db` (Product Search Service - Python FastAPI)
 - **Automated GitOps Continuous Delivery**:
-  - Code pushed to `master` triggers `.github/workflows/ci.yml`.
+  - Code pushed to `master` or `feature` triggers `.github/workflows/ci.yml`.
   - Images are built in parallel and published to Amazon ECR.
-  - Image tags in `rajkumargudala/ecommerce-gitops` (`helm/values.yaml` on `main`) are auto-updated.
+  - `master` updates image tags on `main` in `rajkumargudala/ecommerce-gitops`; `feature` updates tags on `version-2`.
   - ArgoCD reconciles the cluster to the desired state.
 - **Modernized Enterprise UI**:
   - Redesigned with a modern design system (dark slate & vibrant accents).
@@ -47,6 +52,11 @@ An enterprise, cloud-native eCommerce platform built using **seven distinct prog
 │   ├── payment-db-init.sql
 │   ├── notification-db-init.sql
 │   ├── analytics-db-init.sql
+│   ├── cart-db-init.sql
+│   ├── shipping-db-init.sql
+│   ├── reviews-db-init.sql
+│   ├── promotions-db-init.sql
+│   ├── search-db-init.sql
 │   └── README.md
 ├── frontend/                    # Modern React 19 + Vite + Nginx UI
 │   ├── src/
@@ -68,22 +78,29 @@ An enterprise, cloud-native eCommerce platform built using **seven distinct prog
 │           ├── databases-statefulsets.yaml # StatefulSets with gp3 PVCs for dedicated DBs
 │           ├── pdb.yaml                    # PodDisruptionBudgets
 │           ├── frontend-ingress.yaml       # AWS ALB Ingress
-│           └── <service>-deployment.yaml   # Service deployments with rolling updates
+│           └── additional-services.yaml    # Cart, shipping, reviews, promotions, and search
 ├── scripts/
 │   └── health-check.sh          # EKS ingress and microservice health check script
-├── services/                    # 7 Polyglot Microservices
+├── services/                    # 12 Polyglot Microservices
 │   ├── auth-service/            # Java 21 / Spring Boot
 │   ├── catalog-service/         # Go 1.22
 │   ├── inventory-service/       # Node.js 20 / Express
 │   ├── order-service/           # Python 3.11 / FastAPI
 │   ├── payment-service/         # C# / ASP.NET Core 8
 │   ├── notification-service/    # Ruby 3.2 / Sinatra
-│   └── analytics-service/       # PHP 8.2
+│   ├── analytics-service/       # PHP 8.2
+│   ├── cart-service/            # Python 3.11 / FastAPI
+│   ├── shipping-service/       # Python 3.11 / FastAPI
+│   ├── reviews-service/        # Python 3.11 / FastAPI
+│   ├── promotions-service/     # Python 3.11 / FastAPI
+│   └── search-service/         # Python 3.11 / FastAPI
 ├── terraform/                   # AWS Infrastructure Foundation
 │   ├── environments/dev/        # Dev environment entry point
 │   └── modules/                 # Reusable modules (VPC, IAM, EKS, ECR, ACM, Addons)
 └── ARCHITECTURE.md              # Detailed architecture documentation
 ```
+
+The five new APIs are available through Nginx at `/api/cart`, `/api/shipping`, `/api/reviews`, `/api/promotions`, and `/api/search`. See [`docs/API-EXAMPLES.md`](docs/API-EXAMPLES.md) for request examples and the product-search indexing workflow.
 
 ---
 

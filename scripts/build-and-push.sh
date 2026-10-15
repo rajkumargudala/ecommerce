@@ -20,6 +20,11 @@ declare -A SERVICES=(
   ["payment-service"]="services/payment-service"
   ["notification-service"]="services/notification-service"
   ["analytics-service"]="services/analytics-service"
+  ["cart-service"]="services/cart-service"
+  ["shipping-service"]="services/shipping-service"
+  ["reviews-service"]="services/reviews-service"
+  ["promotions-service"]="services/promotions-service"
+  ["search-service"]="services/search-service"
 )
 
 for svc in "${!SERVICES[@]}"; do
@@ -35,5 +40,5 @@ for svc in "${!SERVICES[@]}"; do
 done
 
 echo "=========================================="
-echo "All 8 images successfully built and pushed!"
+echo "All 13 images successfully built and pushed!"
 echo "=========================================="

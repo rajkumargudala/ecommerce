@@ -49,6 +49,11 @@ export default function App() {
         setter: setNotifications,
       },
       { name: "Analytics", key: "analytics", url: `${URLs.analytics}/analytics/summary`, setter: setAnalytics },
+      { name: "Cart", key: "cart", url: `${URLs.cart}/health` },
+      { name: "Shipping", key: "shipping", url: `${URLs.shipping}/health` },
+      { name: "Reviews", key: "reviews", url: `${URLs.reviews}/health` },
+      { name: "Promotions", key: "promotions", url: `${URLs.promotions}/health` },
+      { name: "Search", key: "search", url: `${URLs.search}/health` },
     ];
 
     const results = await Promise.allSettled(services.map((s) => request(s.url)));
@@ -58,7 +63,7 @@ export default function App() {
     results.forEach((res, idx) => {
       const s = services[idx];
       if (res.status === "fulfilled") {
-        s.setter(res.value);
+        s.setter?.(res.value);
         newHealth[s.key] = true;
       } else {
         newHealth[s.key] = false;
@@ -691,6 +696,11 @@ function DedicatedDatabaseMatrix({ healthStatus }) {
     { name: "Payment Service", lang: "C# .NET 8", port: 8085, dbHost: "payment-db:5432", dbName: "payment_db", key: "payments" },
     { name: "Notify Service", lang: "Ruby 3.2", port: 8086, dbHost: "notification-db:5432", dbName: "notification_db", key: "notifications" },
     { name: "Analytics Service", lang: "PHP 8.2", port: 8087, dbHost: "analytics-db:5432", dbName: "analytics_db", key: "analytics" },
+    { name: "Cart Service", lang: "Python 3.11 / FastAPI", port: 8088, dbHost: "cart-db:5432", dbName: "cart_db", key: "cart" },
+    { name: "Shipping Service", lang: "Python 3.11 / FastAPI", port: 8089, dbHost: "shipping-db:5432", dbName: "shipping_db", key: "shipping" },
+    { name: "Reviews Service", lang: "Python 3.11 / FastAPI", port: 8090, dbHost: "reviews-db:5432", dbName: "reviews_db", key: "reviews" },
+    { name: "Promotions Service", lang: "Python 3.11 / FastAPI", port: 8091, dbHost: "promotions-db:5432", dbName: "promotions_db", key: "promotions" },
+    { name: "Search Service", lang: "Python 3.11 / FastAPI", port: 8092, dbHost: "search-db:5432", dbName: "search_db", key: "search" },
   ];
 
   return (
@@ -1334,6 +1344,11 @@ function TopologyView({ healthStatus }) {
     { name: "Payment Service", lang: "C# / ASP.NET Core 8", port: 8085, dbHost: "payment-db:5432", dbName: "payment_db", pvc: "payment-db-data (5Gi gp3)", key: "payments" },
     { name: "Notification Service", lang: "Ruby 3.2 / Sinatra", port: 8086, dbHost: "notification-db:5432", dbName: "notification_db", pvc: "notification-db-data (5Gi gp3)", key: "notifications" },
     { name: "Analytics Service", lang: "PHP 8.2", port: 8087, dbHost: "analytics-db:5432", dbName: "analytics_db", pvc: "analytics-db-data (5Gi gp3)", key: "analytics" },
+    { name: "Cart Service", lang: "Python 3.11 / FastAPI", port: 8088, dbHost: "cart-db:5432", dbName: "cart_db", pvc: "cart-db-data (5Gi gp3)", key: "cart" },
+    { name: "Shipping Service", lang: "Python 3.11 / FastAPI", port: 8089, dbHost: "shipping-db:5432", dbName: "shipping_db", pvc: "shipping-db-data (5Gi gp3)", key: "shipping" },
+    { name: "Reviews Service", lang: "Python 3.11 / FastAPI", port: 8090, dbHost: "reviews-db:5432", dbName: "reviews_db", pvc: "reviews-db-data (5Gi gp3)", key: "reviews" },
+    { name: "Promotions Service", lang: "Python 3.11 / FastAPI", port: 8091, dbHost: "promotions-db:5432", dbName: "promotions_db", pvc: "promotions-db-data (5Gi gp3)", key: "promotions" },
+    { name: "Search Service", lang: "Python 3.11 / FastAPI", port: 8092, dbHost: "search-db:5432", dbName: "search_db", pvc: "search-db-data (5Gi gp3)", key: "search" },
   ];
 
   return (

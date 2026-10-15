@@ -1,4 +1,4 @@
-{{- $databases := list "auth" "catalog" "inventory" "order" "payment" "notification" "analytics" -}}
+{{- $databases := list "auth" "catalog" "inventory" "order" "payment" "notification" "analytics" "cart" "shipping" "reviews" "promotions" "search" -}}
 {{- range $svc := $databases }}
 {{- $cfg := index $.Values $svc }}
 {{- if and $cfg.enabled $cfg.database.enabled }}

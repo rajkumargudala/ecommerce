@@ -1,5 +1,5 @@
 {{- if .Values.podDisruptionBudget.enabled }}
-{{- $services := list "auth" "catalog" "inventory" "order" "payment" "notification" "analytics" "frontend" }}
+{{- $services := list "auth" "catalog" "inventory" "order" "payment" "notification" "analytics" "cart" "shipping" "reviews" "promotions" "search" "frontend" }}
 {{- range $svc := $services }}
 {{- $cfg := index $.Values $svc }}
 {{- if and $cfg.enabled (gt (int $cfg.replicaCount) 1) }}

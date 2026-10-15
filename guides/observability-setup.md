@@ -155,7 +155,7 @@ env:
 Three production-ready dashboards are deployed under the **`eCommerce Platform`** folder in Grafana:
 
 1. **eCommerce Platform - Application Overview** (`ecommerce-overview`):
-   - Health status cards for all 8 microservices (UP/DOWN)
+   - Health status cards for the frontend and original seven services (UP/DOWN); the deep-dive dashboard selector also lists the five added services
    - Running vs desired replicas, pod restarts, total CPU, memory, and network throughput
    - Service CPU & memory breakdown
    - Dedicated database storage capacity & consumption (`gp3` PVCs)

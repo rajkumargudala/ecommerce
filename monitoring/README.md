@@ -10,7 +10,7 @@ All dashboards are grouped under the **`eCommerce Platform`** folder in Grafana:
 
 | Dashboard | UID | Description | Primary Data Sources |
 |---|---|---|---|
-| **eCommerce Platform - Application Overview** | `ecommerce-overview` | High-level executive & SRE dashboard showing health status for all 8 microservices, aggregate CPU/memory/network KPIs, dedicated databases PVC storage utilization, and centralized log ingestion rates. | Prometheus, Loki |
+| **eCommerce Platform - Application Overview** | `ecommerce-overview` | High-level executive & SRE dashboard with service health cards, aggregate CPU/memory/network KPIs, dedicated databases PVC storage utilization, and centralized log ingestion rates. | Prometheus, Loki |
 | **eCommerce Microservices - Deep Dive & Performance** | `ecommerce-services` | In-depth service-level analysis. Includes dynamic dropdown selectors for service and pod instances, CPU vs request/limit, memory working set, CGroup CPU throttling seconds, and active pod placement table. | Prometheus |
 | **eCommerce Centralized Logs & Traces Explorer** | `ecommerce-logs` | Operational troubleshooting dashboard for container logs and traces. Features keyword search, log-level filtering, error & warning rates over time, live log stream, and correlation with Grafana Tempo traces via `trace_id`. | Loki, Tempo |
 

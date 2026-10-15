@@ -193,7 +193,127 @@ analytics:
     storageSize: 5Gi
     storageClassName: gp3
 
-# 8. Frontend Web UI (React + Nginx)
+# 8. Cart Service (Python FastAPI) + Dedicated cart-db
+cart:
+  enabled: true
+  tag: cart-service
+  replicaCount: 2
+  service:
+    port: 8088
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+  database:
+    enabled: true
+    host: cart-db
+    port: 5432
+    name: cart_db
+    user: cart_user
+    password: cart_db_password_123
+    storageSize: 5Gi
+    storageClassName: gp3
+
+# 9. Shipping Service (Python FastAPI) + Dedicated shipping-db
+shipping:
+  enabled: true
+  tag: shipping-service
+  replicaCount: 2
+  service:
+    port: 8089
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+  database:
+    enabled: true
+    host: shipping-db
+    port: 5432
+    name: shipping_db
+    user: shipping_user
+    password: shipping_db_password_123
+    storageSize: 5Gi
+    storageClassName: gp3
+
+# 10. Product Reviews Service (Python FastAPI) + Dedicated reviews-db
+reviews:
+  enabled: true
+  tag: reviews-service
+  replicaCount: 2
+  service:
+    port: 8090
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+  database:
+    enabled: true
+    host: reviews-db
+    port: 5432
+    name: reviews_db
+    user: reviews_user
+    password: reviews_db_password_123
+    storageSize: 5Gi
+    storageClassName: gp3
+
+# 11. Promotions Service (Python FastAPI) + Dedicated promotions-db
+promotions:
+  enabled: true
+  tag: promotions-service
+  replicaCount: 2
+  service:
+    port: 8091
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+  database:
+    enabled: true
+    host: promotions-db
+    port: 5432
+    name: promotions_db
+    user: promotions_user
+    password: promotions_db_password_123
+    storageSize: 5Gi
+    storageClassName: gp3
+
+# 12. Product Search Service (Python FastAPI) + Dedicated search-db
+search:
+  enabled: true
+  tag: search-service
+  replicaCount: 2
+  service:
+    port: 8092
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+  database:
+    enabled: true
+    host: search-db
+    port: 5432
+    name: search_db
+    user: search_user
+    password: search_db_password_123
+    storageSize: 5Gi
+    storageClassName: gp3
+
+# 13. Frontend Web UI (React + Nginx)
 frontend:
   enabled: true
   tag: frontend-9d606d1f57e3482fc1959719550013499b79c86a

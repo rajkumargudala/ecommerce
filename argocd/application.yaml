@@ -10,7 +10,7 @@ spec:
   source:
     repoURL: https://github.com/rajkumargudala/ecommerce-gitops.git
 
-    targetRevision: main
+    targetRevision: version-2
     path: helm/
     helm:
       valueFiles:
