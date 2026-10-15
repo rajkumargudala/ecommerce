@@ -10,7 +10,7 @@ The pipeline automates chart validation, parallel multi-language container build
 
 ```text
 +---------------------+
-|   Developer Push    | (Pushes feature/bugfix to 'main' branch)
+|   Developer Push    | (Pushes to the app repository's 'master' branch)
 +----------+----------+
            |
            v
@@ -18,13 +18,13 @@ The pipeline automates chart validation, parallel multi-language container build
 |   GitHub Actions    |  .github/workflows/ci.yml
 |                     |  1. Lint & Validate Helm Chart (helm lint & template)
 |   CI Pipeline       |  2. Build & Push 8 Docker Images in parallel to Amazon ECR
-|                     |  3. Update image tags in helm/ecommerce/values.yaml
-|                     |  4. Auto-commit & push updated values to Git [skip ci]
+|                     |  3. Update image tags in ecommerce-gitops/helm/values.yaml
+|                     |  4. Commit updated values to ecommerce-gitops 'main' [skip ci]
 +----------+----------+
            |
            v
 +---------------------+
-|   Git Repository    | (Contains desired state in helm/ecommerce/)
+|   GitOps Repository | (rajkumargudala/ecommerce-gitops, chart in helm/)
 +----------+----------+
            |
            | Polling / Webhook
@@ -102,7 +102,7 @@ Compiles and builds Docker images in parallel for all 8 microservices using Dock
 Images are pushed to ECR tagged with both `:latest` and `:<service>-<GIT_SHA>`.
 
 ### Stage 3: `update-git-manifests` (GitOps Automated Tagging)
-Extracts the commit SHA (`${{ github.sha }}`), updates `helm/ecommerce/values.yaml` using `sed`, and commits the updated tags back to `main` with `[skip ci]`.
+Checks out `rajkumargudala/ecommerce-gitops` on `main`, updates the eight service tags in `helm/values.yaml` to the image tags built from `${{ github.sha }}`, and pushes the change with `[skip ci]`.
 
 ### Required GitHub Repository Secrets
 To enable the workflow, configure the following secrets under **Settings > Secrets and variables > Actions**:
@@ -111,6 +111,7 @@ To enable the workflow, configure the following secrets under **Settings > Secre
 |---|---|
 | `AWS_ACCESS_KEY_ID` | AWS IAM Access Key with ECR push permissions |
 | `AWS_SECRET_ACCESS_KEY` | AWS IAM Secret Access Key |
+| `GITOPS_TOKEN` | Fine-grained GitHub token with Contents read/write access to `rajkumargudala/ecommerce-gitops` |
 
 ---
 

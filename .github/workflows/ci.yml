@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 env:
   AWS_REGION: us-east-1
@@ -88,35 +88,72 @@ jobs:
           cache-to: type=gha,mode=max
 
   update-git-manifests:
-    name: Update Image Tags in Helm Values (GitOps)
+    name: Update Image Tags in GitOps Repository
     runs-on: ubuntu-latest
     needs: build-and-push
     if: github.ref == 'refs/heads/master' && github.event_name == 'push'
     steps:
-      - name: Checkout Repository
+      - name: Checkout GitOps Repository
         uses: actions/checkout@v4
         with:
+          repository: rajkumargudala/ecommerce-gitops
+          ref: main
+          path: gitops
+          token: ${{ secrets.GITOPS_TOKEN }}
           fetch-depth: 0
 
       - name: Update Helm Values with New Image Tags
         env:
           TAG: ${{ github.sha }}
         run: |
-          services=("auth" "catalog" "inventory" "order" "payment" "notification" "analytics")
+          python3 - <<'PY'
+          import os
+          import re
+          from pathlib import Path
 
-          for s in "${services[@]}"; do
-            sed -i -E "/^${s}:/,/^[a-z]/ s|(tag: [^ \n]+).*|tag: ${s}-service-${TAG}|" helm/ecommerce/values.yaml
-          done
-          sed -i -E "/^frontend:/,/^[a-z]/ s|(tag: [^ \n]+).*|tag: frontend-${TAG}|" helm/ecommerce/values.yaml
+          values_path = Path("gitops/helm/values.yaml")
+          if not values_path.is_file():
+              raise SystemExit(f"Expected GitOps values file at {values_path}")
+
+          tag = os.environ["TAG"]
+          image_tags = {
+              "auth": f"auth-service-{tag}",
+              "catalog": f"catalog-service-{tag}",
+              "inventory": f"inventory-service-{tag}",
+              "order": f"order-service-{tag}",
+              "payment": f"payment-service-{tag}",
+              "notification": f"notification-service-{tag}",
+              "analytics": f"analytics-service-{tag}",
+              "frontend": f"frontend-{tag}",
+          }
+
+          lines = values_path.read_text().splitlines(keepends=True)
+          current_section = None
+          updated = set()
+          for index, line in enumerate(lines):
+              section_match = re.match(r"^([A-Za-z][A-Za-z0-9_-]*):\s*(?:#.*)?(?:\r?\n)?$", line)
+              if section_match:
+                  current_section = section_match.group(1)
+              elif current_section in image_tags and re.match(r"^  tag:\s*", line):
+                  newline = "\n" if line.endswith("\n") else ""
+                  lines[index] = f"  tag: {image_tags[current_section]}{newline}"
+                  updated.add(current_section)
+
+          missing = sorted(set(image_tags) - updated)
+          if missing:
+              raise SystemExit("Missing top-level tag entries in GitOps values.yaml: " + ", ".join(missing))
+
+          values_path.write_text("".join(lines))
+          PY
 
       - name: Commit and Push Updated Helm Values
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add helm/
-          if git diff --staged --quiet; then
+          git -C gitops config user.name "github-actions[bot]"
+          git -C gitops config user.email "github-actions[bot]@users.noreply.github.com"
+          git -C gitops add helm/values.yaml
+          if git -C gitops diff --cached --quiet; then
             echo "No changes to commit."
           else
-            git commit -m "ci(gitops): update helm image tags to ${GITHUB_SHA} [skip ci]"
-            git push origin master
+            git -C gitops commit -m "ci(gitops): update image tags to ${GITHUB_SHA} [skip ci]"
+            git -C gitops push origin HEAD:main
           fi

@@ -16,9 +16,9 @@ An enterprise, cloud-native eCommerce platform built using **seven distinct prog
   - `notification-db` (Notification Service - Ruby)
   - `analytics-db` (Analytics Service - PHP)
 - **Automated GitOps Continuous Delivery**:
-  - Code pushed to `main` triggers `.github/workflows/ci.yml`.
+  - Code pushed to `master` triggers `.github/workflows/ci.yml`.
   - Images are built in parallel and published to Amazon ECR.
-  - Image tags in `helm/ecommerce/values.yaml` are auto-updated.
+  - Image tags in `rajkumargudala/ecommerce-gitops` (`helm/values.yaml` on `main`) are auto-updated.
   - ArgoCD reconciles the cluster to the desired state.
 - **Modernized Enterprise UI**:
   - Redesigned with a modern design system (dark slate & vibrant accents).
