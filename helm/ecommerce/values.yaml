@@ -28,7 +28,7 @@ podDisruptionBudget:
 # 1. Auth Service (Java 21 / Spring Boot) + Dedicated auth-db
 auth:
   enabled: true
-  tag: auth-service-cc64acdd65db7f217bb5d4b9f671be496c367edf
+  tag: auth-service-9d606d1f57e3482fc1959719550013499b79c86a
   replicaCount: 2
   service:
     port: 8081
@@ -52,7 +52,7 @@ auth:
 # 2. Catalog Service (Go) + Dedicated catalog-db
 catalog:
   enabled: true
-  tag: catalog-service-cc64acdd65db7f217bb5d4b9f671be496c367edf
+  tag: catalog-service-9d606d1f57e3482fc1959719550013499b79c86a
   replicaCount: 2
   service:
     port: 8082
@@ -76,7 +76,7 @@ catalog:
 # 3. Inventory Service (Node.js) + Dedicated inventory-db
 inventory:
   enabled: true
-  tag: inventory-service-cc64acdd65db7f217bb5d4b9f671be496c367edf
+  tag: inventory-service-9d606d1f57e3482fc1959719550013499b79c86a
   replicaCount: 2
   service:
     port: 8083
@@ -100,7 +100,7 @@ inventory:
 # 4. Order Service (Python) + Dedicated order-db
 order:
   enabled: true
-  tag: order-service-cc64acdd65db7f217bb5d4b9f671be496c367edf
+  tag: order-service-9d606d1f57e3482fc1959719550013499b79c86a
   replicaCount: 2
   service:
     port: 8084
@@ -124,7 +124,7 @@ order:
 # 5. Payment Service (C# / .NET) + Dedicated payment-db
 payment:
   enabled: true
-  tag: payment-service-cc64acdd65db7f217bb5d4b9f671be496c367edf
+  tag: payment-service-9d606d1f57e3482fc1959719550013499b79c86a
   replicaCount: 2
   service:
     port: 8085
@@ -148,7 +148,7 @@ payment:
 # 6. Notification Service (Ruby / Sinatra) + Dedicated notification-db
 notification:
   enabled: true
-  tag: notification-service-cc64acdd65db7f217bb5d4b9f671be496c367edf
+  tag: notification-service-9d606d1f57e3482fc1959719550013499b79c86a
   replicaCount: 2
   service:
     port: 8086
@@ -172,7 +172,7 @@ notification:
 # 7. Analytics Service (PHP) + Dedicated analytics-db
 analytics:
   enabled: true
-  tag: analytics-service-cc64acdd65db7f217bb5d4b9f671be496c367edf
+  tag: analytics-service-9d606d1f57e3482fc1959719550013499b79c86a
   replicaCount: 2
   service:
     port: 8087
@@ -196,7 +196,7 @@ analytics:
 # 8. Frontend Web UI (React + Nginx)
 frontend:
   enabled: true
-  tag: frontend-cc64acdd65db7f217bb5d4b9f671be496c367edf
+  tag: frontend-9d606d1f57e3482fc1959719550013499b79c86a
   replicaCount: 2
   service:
     type: ClusterIP
