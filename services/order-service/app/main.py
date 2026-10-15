@@ -16,6 +16,7 @@ DB_DSN = os.getenv(
 CATALOG_URL = os.getenv("CATALOG_URL", "http://catalog-service:8082")
 INVENTORY_URL = os.getenv("INVENTORY_URL", "http://inventory-service:8083")
 NOTIFICATION_URL = os.getenv("NOTIFICATION_URL", "http://notification-service:8086")
+PROMOTIONS_URL = os.getenv("PROMOTIONS_URL", "http://promotions-service:8091")
 
 app = FastAPI(title="DevOps Shack Order Service", version="1.0.0")
 app.add_middleware(
@@ -42,6 +43,10 @@ def migrate():
                     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
                 )
             """)
+            cur.execute("ALTER TABLE orders ADD COLUMN IF NOT EXISTS subtotal NUMERIC(12,2)")
+            cur.execute("ALTER TABLE orders ADD COLUMN IF NOT EXISTS discount_amount NUMERIC(12,2) NOT NULL DEFAULT 0")
+            cur.execute("ALTER TABLE orders ADD COLUMN IF NOT EXISTS promotion_code VARCHAR(80)")
+            cur.execute("UPDATE orders SET subtotal=total WHERE subtotal IS NULL")
 
 migrate()
 
@@ -52,6 +57,7 @@ class OrderItemIn(BaseModel):
 class OrderCreate(BaseModel):
     user_email: EmailStr
     items: list[OrderItemIn]
+    promotion_code: str | None = None
 
 class StatusUpdate(BaseModel):
     status: Literal["CREATED", "PAID", "PROCESSING", "SHIPPED", "CANCELLED", "REFUNDED"]
@@ -95,6 +101,9 @@ async def create_order(payload: OrderCreate):
 
     enriched = []
     reserve_items = []
+    subtotal = Decimal("0.00")
+    discount_amount = Decimal("0.00")
+    promotion_code = payload.promotion_code.strip() if payload.promotion_code else None
     total = Decimal("0.00")
 
     async with httpx.AsyncClient(timeout=5.0) as client:
@@ -110,7 +119,7 @@ async def create_order(payload: OrderCreate):
 
             unit_price = Decimal(str(product["price"]))
             line_total = unit_price * item.quantity
-            total += line_total
+            subtotal += line_total
 
             enriched.append({
                 "product_id": item.product_id,
@@ -120,6 +129,28 @@ async def create_order(payload: OrderCreate):
                 "line_total": float(line_total),
             })
             reserve_items.append({"productId": item.product_id, "quantity": item.quantity})
+
+        if promotion_code:
+            quote_response = await client.post(
+                f"{PROMOTIONS_URL}/promotions/validate",
+                json={
+                    "code": promotion_code,
+                    "customerId": str(payload.user_email),
+                    "subtotal": float(subtotal),
+                },
+            )
+            if quote_response.status_code >= 400:
+                try:
+                    detail = quote_response.json().get("detail", "promotion could not be applied")
+                except Exception:
+                    detail = "promotion could not be applied"
+                raise HTTPException(quote_response.status_code, detail)
+            quote = quote_response.json()
+            promotion_code = quote["code"]
+            discount_amount = Decimal(str(quote["discountAmount"]))
+            total = Decimal(str(quote["total"]))
+        else:
+            total = subtotal
 
         reserve = await client.post(
             f"{INVENTORY_URL}/inventory/reserve",
@@ -136,10 +167,14 @@ async def create_order(payload: OrderCreate):
             with conn() as db:
                 with db.cursor() as cur:
                     cur.execute("""
-                        INSERT INTO orders(user_email,status,total,items)
-                        VALUES(%s,'CREATED',%s,%s)
+                        INSERT INTO orders(
+                            user_email,status,total,subtotal,discount_amount,promotion_code,items
+                        ) VALUES(%s,'CREATED',%s,%s,%s,%s,%s)
                         RETURNING *
-                    """, (str(payload.user_email), total, Json(enriched)))
+                    """, (
+                        str(payload.user_email), total, subtotal, discount_amount,
+                        promotion_code, Json(enriched),
+                    ))
                     row = cur.fetchone()
         except Exception:
             await client.post(
@@ -147,6 +182,42 @@ async def create_order(payload: OrderCreate):
                 json={"items": reserve_items},
             )
             raise
+
+        if promotion_code:
+            try:
+                redemption = await client.post(
+                    f"{PROMOTIONS_URL}/promotions/redeem",
+                    json={
+                        "code": promotion_code,
+                        "customerId": str(payload.user_email),
+                        "subtotal": float(subtotal),
+                        "orderId": str(row["id"]),
+                    },
+                )
+                if redemption.status_code >= 400:
+                    try:
+                        detail = redemption.json().get("detail", "promotion redemption failed")
+                    except Exception:
+                        detail = "promotion redemption failed"
+                    raise HTTPException(redemption.status_code, detail)
+            except Exception as e:
+                detail = e.detail if isinstance(e, HTTPException) else "promotion redemption failed; please try again"
+                try:
+                    with conn() as db:
+                        with db.cursor() as cur:
+                            cur.execute("DELETE FROM orders WHERE id=%s", (row["id"],))
+                except Exception:
+                    pass
+                try:
+                    await client.post(
+                        f"{INVENTORY_URL}/inventory/release",
+                        json={"items": reserve_items},
+                    )
+                except Exception:
+                    pass
+                if isinstance(e, HTTPException):
+                    raise
+                raise HTTPException(502, detail) from e
 
         try:
             await client.post(

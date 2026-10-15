@@ -3,6 +3,22 @@ import { request, URLs } from "./api.js";
 
 const money = (n) => `$${Number(n || 0).toFixed(2)}`;
 
+function hydrateCartItems(items = [], products = []) {
+  const productsById = new Map(products.map((product) => [Number(product.id), product]));
+  return items.map((item) => {
+    const id = Number(item.productId ?? item.product_id);
+    const product = productsById.get(id) || {};
+    return {
+      ...product,
+      id,
+      name: product.name || `Product #${id}`,
+      price: Number(product.price || 0),
+      image: product.image || "📦",
+      quantity: Number(item.quantity || 0),
+    };
+  });
+}
+
 export default function App() {
   const [user, setUser] = useState(() => JSON.parse(localStorage.getItem("poly_user") || "null"));
   const [tab, setTab] = useState("overview");
@@ -15,6 +31,8 @@ export default function App() {
   const [notifications, setNotifications] = useState([]);
   const [analytics, setAnalytics] = useState({});
   const [snapshots, setSnapshots] = useState([]);
+  const [shipments, setShipments] = useState([]);
+  const [promotions, setPromotions] = useState([]);
 
   // UI state
   const [cart, setCart] = useState([]);
@@ -24,6 +42,18 @@ export default function App() {
   const [isNewProductOpen, setIsNewProductOpen] = useState(false);
   const [healthStatus, setHealthStatus] = useState({});
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [promotionCode, setPromotionCode] = useState("");
+  const [appliedPromotion, setAppliedPromotion] = useState(null);
+  const [isApplyingPromotion, setIsApplyingPromotion] = useState(false);
+  const [shippingAddress, setShippingAddress] = useState({
+    recipientName: "",
+    addressLine1: "",
+    addressLine2: "",
+    city: "",
+    region: "",
+    postalCode: "",
+    country: "United States",
+  });
 
   const addToast = (message, type = "info") => {
     const id = Date.now();
@@ -37,6 +67,7 @@ export default function App() {
     setIsRefreshing(true);
     setError("");
 
+    const customerId = encodeURIComponent(user.email);
     const services = [
       { name: "Catalog", key: "catalog", url: `${URLs.catalog}/products`, setter: setProducts },
       { name: "Inventory", key: "inventory", url: `${URLs.inventory}/inventory`, setter: setInventory },
@@ -49,10 +80,10 @@ export default function App() {
         setter: setNotifications,
       },
       { name: "Analytics", key: "analytics", url: `${URLs.analytics}/analytics/summary`, setter: setAnalytics },
-      { name: "Cart", key: "cart", url: `${URLs.cart}/health` },
-      { name: "Shipping", key: "shipping", url: `${URLs.shipping}/health` },
+      { name: "Cart", key: "cart", url: `${URLs.cart}/carts/${customerId}` },
+      { name: "Shipping", key: "shipping", url: `${URLs.shipping}/shipments`, setter: setShipments },
       { name: "Reviews", key: "reviews", url: `${URLs.reviews}/health` },
-      { name: "Promotions", key: "promotions", url: `${URLs.promotions}/health` },
+      { name: "Promotions", key: "promotions", url: `${URLs.promotions}/promotions`, setter: setPromotions },
       { name: "Search", key: "search", url: `${URLs.search}/health` },
     ];
 
@@ -60,25 +91,52 @@ export default function App() {
     const newHealth = {};
     const failed = [];
 
+    let catalogItems = products;
     results.forEach((res, idx) => {
       const s = services[idx];
       if (res.status === "fulfilled") {
-        s.setter?.(res.value);
         newHealth[s.key] = true;
+        if (s.key === "catalog") catalogItems = res.value;
       } else {
         newHealth[s.key] = false;
         failed.push(`${s.name}: ${res.reason?.message || "Unavailable"}`);
       }
     });
 
-    // Also check auth health
-    request(`${URLs.auth}/health`)
-      .then(() => {
-        newHealth.auth = true;
-      })
-      .catch(() => {
-        newHealth.auth = false;
-      });
+    const cartResult = results[services.findIndex((service) => service.key === "cart")];
+    if (cartResult.status === "fulfilled") {
+      setCart(hydrateCartItems(cartResult.value?.items || [], catalogItems));
+    }
+
+    const searchIndexResults = await Promise.allSettled(
+      catalogItems.map((product) => request(`${URLs.search}/search/index`, {
+        method: "PUT",
+        body: JSON.stringify({
+          productId: product.id,
+          name: product.name,
+          category: product.category,
+          description: product.description || "",
+          price: Number(product.price),
+          image: product.image || "",
+          active: product.active !== false,
+        }),
+      }))
+    );
+    const failedIndexes = searchIndexResults.filter((result) => result.status === "rejected");
+    const searchHealthResult = results[services.findIndex((service) => service.key === "search")];
+    newHealth.search = searchHealthResult.status === "fulfilled" && failedIndexes.length === 0;
+    if (failedIndexes.length) failed.push(`Search: ${failedIndexes[0].reason?.message || "Could not index products"}`);
+
+    results.forEach((res, idx) => {
+      if (res.status === "fulfilled") services[idx].setter?.(res.value);
+    });
+
+    try {
+      await request(`${URLs.auth}/health`);
+      newHealth.auth = true;
+    } catch (e) {
+      newHealth.auth = false;
+    }
 
     setHealthStatus(newHealth);
 
@@ -120,51 +178,165 @@ export default function App() {
   }
 
   // Cart operations
-  const addToCart = (product) => {
-    setCart((curr) => {
-      const found = curr.find((x) => x.id === product.id);
-      if (found) {
-        return curr.map((x) => (x.id === product.id ? { ...x, quantity: x.quantity + 1 } : x));
+  const addToCart = async (product) => {
+    const quantity = (cart.find((item) => item.id === product.id)?.quantity || 0) + 1;
+    try {
+      await request(`${URLs.cart}/carts/${encodeURIComponent(user.email)}/items`, {
+        method: "PUT",
+        body: JSON.stringify({ productId: product.id, quantity }),
+      });
+      setCart((curr) => {
+        const found = curr.some((item) => item.id === product.id);
+        return found
+          ? curr.map((item) => item.id === product.id ? { ...product, quantity } : item)
+          : [...curr, { ...product, quantity }];
+      });
+      setAppliedPromotion(null);
+      addToast(`Added "${product.name}" to cart`, "success");
+    } catch (e) {
+      setError(e.message);
+      addToast(`Could not add item to cart: ${e.message}`, "error");
+    }
+  };
+
+  const updateCartQty = async (productId, delta) => {
+    const item = cart.find((entry) => entry.id === productId);
+    if (!item) return;
+    const quantity = item.quantity + delta;
+    try {
+      if (quantity > 0) {
+        await request(`${URLs.cart}/carts/${encodeURIComponent(user.email)}/items`, {
+          method: "PUT",
+          body: JSON.stringify({ productId, quantity }),
+        });
+        setCart((curr) => curr.map((entry) => entry.id === productId ? { ...entry, quantity } : entry));
+      } else {
+        await request(`${URLs.cart}/carts/${encodeURIComponent(user.email)}/items/${productId}`, { method: "DELETE" });
+        setCart((curr) => curr.filter((entry) => entry.id !== productId));
       }
-      return [...curr, { ...product, quantity: 1 }];
-    });
-    addToast(`Added "${product.name}" to cart`, "success");
+      setAppliedPromotion(null);
+    } catch (e) {
+      setError(e.message);
+      addToast(`Could not update cart: ${e.message}`, "error");
+    }
   };
 
-  const updateCartQty = (productId, delta) => {
-    setCart((curr) =>
-      curr
-        .map((x) => {
-          if (x.id === productId) {
-            const next = x.quantity + delta;
-            return next > 0 ? { ...x, quantity: next } : null;
-          }
-          return x;
-        })
-        .filter(Boolean)
-    );
+  const removeCartItem = async (productId) => {
+    try {
+      await request(`${URLs.cart}/carts/${encodeURIComponent(user.email)}/items/${productId}`, { method: "DELETE" });
+      setCart((curr) => curr.filter((item) => item.id !== productId));
+      setAppliedPromotion(null);
+      addToast("Item removed from cart", "info");
+    } catch (e) {
+      setError(e.message);
+      addToast(`Could not remove item: ${e.message}`, "error");
+    }
   };
 
-  const removeCartItem = (productId) => {
-    setCart((curr) => curr.filter((x) => x.id !== productId));
-    addToast("Item removed from cart", "info");
+  const applyPromotion = async (code = promotionCode) => {
+    const trimmedCode = code.trim();
+    if (!trimmedCode) {
+      addToast("Enter a promo code first", "error");
+      return;
+    }
+    if (!cart.length) {
+      addToast("Add a product to your cart before applying a promotion", "info");
+      return;
+    }
+    setIsApplyingPromotion(true);
+    try {
+      const quote = await request(`${URLs.promotions}/promotions/validate`, {
+        method: "POST",
+        body: JSON.stringify({
+          code: trimmedCode,
+          customerId: user.email,
+          subtotal: Number(cartSubtotal.toFixed(2)),
+        }),
+      });
+      setPromotionCode(quote.code);
+      setAppliedPromotion({ ...quote, subtotal: Number(cartSubtotal.toFixed(2)) });
+      addToast(`${quote.code} applied — you save ${money(quote.discountAmount)}`, "success");
+    } catch (e) {
+      setAppliedPromotion(null);
+      addToast(`Promotion not applied: ${e.message}`, "error");
+    } finally {
+      setIsApplyingPromotion(false);
+    }
   };
 
-  const checkout = async () => {
+  const choosePromotion = async (code) => {
+    setPromotionCode(code);
+    setTab("catalog");
+    if (!cart.length) {
+      addToast(`${code} is ready. Add products, then apply it in your cart.`, "info");
+      return;
+    }
+    setIsCartOpen(true);
+    await applyPromotion(code);
+  };
+
+  const checkout = async (event) => {
+    event.preventDefault();
     if (!cart.length) return;
+    const address = {
+      ...shippingAddress,
+      recipientName: shippingAddress.recipientName.trim() || user.name || user.email,
+    };
+    const missingAddress = [address.addressLine1, address.city, address.postalCode, address.country].some((value) => !value.trim());
+    if (missingAddress) {
+      addToast("Enter the delivery address before placing your order", "error");
+      return;
+    }
+    const currentSubtotal = Number(cartSubtotal.toFixed(2));
+    const activeQuote = appliedPromotion && Number(appliedPromotion.subtotal) === currentSubtotal ? appliedPromotion : null;
     try {
       const order = await request(`${URLs.orders}/orders`, {
         method: "POST",
         body: JSON.stringify({
           user_email: user.email,
+          promotion_code: activeQuote?.code || null,
           items: cart.map((x) => ({ product_id: x.id, quantity: x.quantity })),
         }),
       });
+
+      let shippingError = "";
+      try {
+        const shipment = await request(`${URLs.shipping}/shipments`, {
+          method: "POST",
+          body: JSON.stringify({
+            orderId: order.id,
+            recipientName: address.recipientName,
+            addressLine1: address.addressLine1,
+            addressLine2: address.addressLine2,
+            city: address.city,
+            region: address.region,
+            postalCode: address.postalCode,
+            country: address.country,
+            carrier: "STANDARD",
+          }),
+        });
+        setShipments((current) => [shipment, ...current.filter((item) => item.orderId !== shipment.orderId)]);
+      } catch (e) {
+        shippingError = e.message;
+      }
+
+      try {
+        await request(`${URLs.cart}/carts/${encodeURIComponent(user.email)}`, { method: "DELETE" });
+      } catch (e) {
+        shippingError = [shippingError, `Cart cleanup failed: ${e.message}`].filter(Boolean).join("; ");
+      }
       setCart([]);
+      setAppliedPromotion(null);
+      setPromotionCode("");
       setIsCartOpen(false);
       await loadAll();
       setTab("orders");
-      addToast(`Order #${order.id} created successfully!`, "success");
+      addToast(
+        shippingError
+          ? `Order #${order.id} placed, but follow-up needs attention: ${shippingError}`
+          : `Order #${order.id} placed. Shipment tracking is ready.`,
+        shippingError ? "error" : "success"
+      );
     } catch (e) {
       setError(e.message);
       addToast(`Order creation failed: ${e.message}`, "error");
@@ -199,11 +371,40 @@ export default function App() {
         method: "PUT",
         body: JSON.stringify({ status: nextStatus }),
       });
+      if (nextStatus === "SHIPPED") {
+        const shipment = shipments.find((item) => Number(item.orderId) === Number(order.id));
+        if (shipment?.status === "LABEL_CREATED") {
+          await request(`${URLs.shipping}/shipments/${shipment.id}/status`, {
+            method: "PATCH",
+            body: JSON.stringify({ status: "IN_TRANSIT" }),
+          });
+        }
+      }
       await loadAll();
       addToast(`Order #${order.id} transitioned to ${nextStatus}`, "success");
     } catch (e) {
       setError(e.message);
       addToast(`Status update failed: ${e.message}`, "error");
+    }
+  };
+
+  const advanceShipmentStatus = async (shipment) => {
+    const nextStatus = {
+      LABEL_CREATED: "IN_TRANSIT",
+      IN_TRANSIT: "OUT_FOR_DELIVERY",
+      OUT_FOR_DELIVERY: "DELIVERED",
+    }[shipment.status];
+    if (!nextStatus) return;
+    try {
+      await request(`${URLs.shipping}/shipments/${shipment.id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      await loadAll();
+      addToast(`Shipment ${shipment.trackingNumber}: ${nextStatus.replaceAll("_", " ")}`, "success");
+    } catch (e) {
+      setError(e.message);
+      addToast(`Could not update shipment: ${e.message}`, "error");
     }
   };
 
@@ -289,6 +490,7 @@ export default function App() {
     { key: "overview", icon: "◈", label: "Overview" },
     { key: "microservices", icon: "✦", label: "New Microservices", badge: 5 },
     { key: "catalog", icon: "◫", label: "Product Catalog" },
+    { key: "promotions", icon: "%", label: "Promotions", badge: promotions.length || null },
     { key: "orders", icon: "◎", label: "Orders & Cart", badge: orders.length || null },
     { key: "inventory", icon: "▦", label: "Inventory", badge: lowStockCount ? `${lowStockCount} low` : null },
     { key: "payments", icon: "◇", label: "Payment Ledger" },
@@ -351,23 +553,94 @@ export default function App() {
             </div>
 
             {cart.length > 0 && (
-              <div className="drawer-footer">
+              <form className="drawer-footer checkout-form" onSubmit={checkout}>
+                <div className="checkout-address">
+                  <strong>Delivery address</strong>
+                  <label className="checkout-field">
+                    Recipient
+                    <input
+                      value={shippingAddress.recipientName}
+                      placeholder={user.name || user.email}
+                      onChange={(e) => setShippingAddress({ ...shippingAddress, recipientName: e.target.value })}
+                    />
+                  </label>
+                  <label className="checkout-field">
+                    Street address
+                    <input
+                      required
+                      value={shippingAddress.addressLine1}
+                      onChange={(e) => setShippingAddress({ ...shippingAddress, addressLine1: e.target.value })}
+                    />
+                  </label>
+                  <label className="checkout-field">
+                    Apartment, suite, etc. (optional)
+                    <input
+                      value={shippingAddress.addressLine2}
+                      onChange={(e) => setShippingAddress({ ...shippingAddress, addressLine2: e.target.value })}
+                    />
+                  </label>
+                  <div className="checkout-address-grid">
+                    <label className="checkout-field">
+                      City
+                      <input required value={shippingAddress.city} onChange={(e) => setShippingAddress({ ...shippingAddress, city: e.target.value })} />
+                    </label>
+                    <label className="checkout-field">
+                      State / region
+                      <input value={shippingAddress.region} onChange={(e) => setShippingAddress({ ...shippingAddress, region: e.target.value })} />
+                    </label>
+                    <label className="checkout-field">
+                      Postal code
+                      <input required value={shippingAddress.postalCode} onChange={(e) => setShippingAddress({ ...shippingAddress, postalCode: e.target.value })} />
+                    </label>
+                    <label className="checkout-field">
+                      Country
+                      <input required value={shippingAddress.country} onChange={(e) => setShippingAddress({ ...shippingAddress, country: e.target.value })} />
+                    </label>
+                  </div>
+                </div>
+
+                <div className="checkout-promotion">
+                  <label className="checkout-field" htmlFor="promotion-code">Promo code</label>
+                  <div className="promotion-entry">
+                    <input
+                      id="promotion-code"
+                      value={promotionCode}
+                      placeholder="WELCOME10 or SAVE5"
+                      onChange={(e) => {
+                        setPromotionCode(e.target.value);
+                        setAppliedPromotion(null);
+                      }}
+                    />
+                    <button type="button" className="btn btn-secondary btn-sm" onClick={() => applyPromotion()} disabled={isApplyingPromotion}>
+                      {isApplyingPromotion ? "Checking…" : "Apply"}
+                    </button>
+                  </div>
+                  {promotions.length > 0 && (
+                    <small>Available: {promotions.map((promotion) => promotion.code).join(" · ")}</small>
+                  )}
+                  {appliedPromotion && (
+                    <small className="promotion-applied">{appliedPromotion.code} applied — save {money(appliedPromotion.discountAmount)}</small>
+                  )}
+                </div>
+
                 <div className="bill-line">
                   <span>Subtotal</span>
                   <strong>{money(cartSubtotal)}</strong>
                 </div>
-                <div className="bill-line">
-                  <span>Estimated Tax (8%)</span>
-                  <span>{money(cartSubtotal * 0.08)}</span>
-                </div>
+                {appliedPromotion && Number(appliedPromotion.subtotal) === Number(cartSubtotal.toFixed(2)) && (
+                  <div className="bill-line promotion-savings">
+                    <span>Promotion ({appliedPromotion.code})</span>
+                    <span>−{money(appliedPromotion.discountAmount)}</span>
+                  </div>
+                )}
                 <div className="bill-line total">
-                  <span>Total Amount</span>
-                  <strong>{money(cartSubtotal * 1.08)}</strong>
+                  <span>Order total</span>
+                  <strong>{money(cartSubtotal - (appliedPromotion?.discountAmount || 0))}</strong>
                 </div>
-                <button className="btn btn-primary" style={{ width: "100%", padding: 14 }} onClick={checkout}>
-                  Place Order ({money(cartSubtotal * 1.08)}) →
+                <button type="submit" className="btn btn-primary" style={{ width: "100%", padding: 14 }}>
+                  Place Order ({money(cartSubtotal - (appliedPromotion?.discountAmount || 0))}) →
                 </button>
-              </div>
+              </form>
             )}
           </div>
         </div>
@@ -446,7 +719,7 @@ export default function App() {
       <main className="workspace">
         <header className="top-header">
           <div className="header-title-box">
-            <span className="eyebrow">ENTERPRISE MICROSERVICE CONTROL CENTER</span>
+            <span className="eyebrow">SHOP · CART · ORDERS · DELIVERY</span>
             <h1>{navItems.find((x) => x.key === tab)?.label}</h1>
           </div>
 
@@ -492,17 +765,16 @@ export default function App() {
             <section className="hero-card card">
               <div className="hero-content">
                 <span className="pill pill-blue">ENTERPRISE CLOUD ARCHITECTURE</span>
-                <h2>Production Polyglot Microservices on AWS EKS</h2>
+                <h2>Shop products. Checkout. Track delivery.</h2>
                 <p>
-                  Twelve independent microservices, each operating its own dedicated PostgreSQL database. The five new
-                  Version 2 services are ready to inspect in the service center.
+                  Search the catalog, read and write product reviews, save items to your cart, apply promotions, and follow shipment tracking from your orders.
                 </p>
                 <div className="hero-actions">
                   <button className="btn btn-primary" onClick={() => setTab("catalog")}>
-                    Explore Catalog →
+                    Shop products →
                   </button>
-                  <button className="btn btn-secondary" onClick={() => setTab("microservices")}>
-                    View 5 New Services →
+                  <button className="btn btn-secondary" onClick={() => setTab("promotions")}>
+                    View promotions →
                   </button>
                 </div>
               </div>
@@ -600,9 +872,11 @@ export default function App() {
                 </div>
                 <OrderTable
                   orders={orders.slice(0, 5)}
+                  shipments={shipments}
                   pay={payOrder}
                   cancel={cancelOrder}
                   advance={advanceOrderStatus}
+                  advanceShipment={advanceShipmentStatus}
                 />
               </section>
 
@@ -620,11 +894,11 @@ export default function App() {
         )}
 
         {tab === "microservices" && (
-          <MicroservicesView
-            healthStatus={healthStatus}
-            isRefreshing={isRefreshing}
-            onRefresh={loadAll}
-          />
+          <MicroservicesView onNavigate={setTab} />
+        )}
+
+        {tab === "promotions" && (
+          <PromotionsView promotions={promotions} onChoosePromotion={choosePromotion} onBrowseCatalog={() => setTab("catalog")} />
         )}
 
         {/* Tab 2: Product Catalog */}
@@ -632,6 +906,7 @@ export default function App() {
           <CatalogView
             products={products}
             inventory={inventory}
+            customerId={user.email}
             onAddToCart={addToCart}
             onOpenNewProductModal={() => setIsNewProductOpen(true)}
           />
@@ -641,9 +916,11 @@ export default function App() {
         {tab === "orders" && (
           <OrdersView
             orders={orders}
+            shipments={shipments}
             onPay={payOrder}
             onCancel={cancelOrder}
             onAdvance={advanceOrderStatus}
+            onAdvanceShipment={advanceShipmentStatus}
             onOpenCart={() => setIsCartOpen(true)}
           />
         )}
@@ -734,57 +1011,47 @@ function DedicatedDatabaseMatrix({ healthStatus }) {
   );
 }
 
-function MicroservicesView({ healthStatus, isRefreshing, onRefresh }) {
+function MicroservicesView({ onNavigate }) {
   const services = [
     {
       key: "cart",
       icon: "🛒",
       name: "Cart Service",
-      purpose: "Stores each customer’s cart independently of the web session.",
-      port: 8088,
-      database: "cart-db",
-      api: "/api/cart",
-      example: "GET /carts/{customer_id}",
+      purpose: "Your cart is saved to your account and stays available when you return.",
+      feature: "Shop & manage cart",
+      tab: "catalog",
     },
     {
       key: "shipping",
       icon: "🚚",
       name: "Shipping Service",
-      purpose: "Creates shipments and tracks delivery status for orders.",
-      port: 8089,
-      database: "shipping-db",
-      api: "/api/shipping",
-      example: "POST /shipments",
+      purpose: "Add a delivery address at checkout and follow each order’s tracking updates.",
+      feature: "View delivery tracking",
+      tab: "orders",
     },
     {
       key: "reviews",
       icon: "★",
       name: "Reviews Service",
-      purpose: "Accepts product reviews and returns rating summaries.",
-      port: 8090,
-      database: "reviews-db",
-      api: "/api/reviews",
-      example: "GET /reviews?productId=1",
+      purpose: "Read ratings from shoppers and write a review on any product.",
+      feature: "Read or write product reviews",
+      tab: "catalog",
     },
     {
       key: "promotions",
       icon: "%",
       name: "Promotions Service",
-      purpose: "Validates discount codes and records promotion redemptions.",
-      port: 8091,
-      database: "promotions-db",
-      api: "/api/promotions",
-      example: "POST /promotions/validate",
+      purpose: "Browse current offers and apply eligible discounts to an order.",
+      feature: "Browse and apply offers",
+      tab: "promotions",
     },
     {
       key: "search",
       icon: "⌕",
       name: "Search Service",
-      purpose: "Indexes product details and searches the product catalog.",
-      port: 8092,
-      database: "search-db",
-      api: "/api/search",
-      example: "GET /search?q=keyboard",
+      purpose: "Find products by name, category, and description from the catalog search box.",
+      feature: "Search the product catalog",
+      tab: "catalog",
     },
   ];
 
@@ -792,50 +1059,28 @@ function MicroservicesView({ healthStatus, isRefreshing, onRefresh }) {
     <section className="card microservices-page">
       <div className="panel-head">
         <div>
-          <span className="eyebrow">VERSION 2 · FIVE NEW BACKEND SERVICES</span>
-          <h3>Microservices Center</h3>
+          <span className="eyebrow">VERSION 2 · FIVE SHOPPER FEATURES</span>
+          <h3>Shop with the new services</h3>
         </div>
-        <button className="btn btn-secondary btn-sm" onClick={onRefresh} disabled={isRefreshing}>
-          {isRefreshing ? "↻ Checking..." : "↻ Check health"}
-        </button>
+        <button className="btn btn-primary btn-sm" onClick={() => onNavigate("catalog")}>Browse products →</button>
       </div>
       <p className="microservices-intro">
-        Each service runs independently in EKS with its own database. Use the API route shown on a card from the app,
-        or open its health endpoint to confirm it is responding.
+        Use these features while shopping. Each action below opens the store page connected to its service.
       </p>
       <div className="microservice-grid">
         {services.map((service) => {
-          const isOnline = healthStatus[service.key] === true;
-          const isUnavailable = healthStatus[service.key] === false;
-          const status = isOnline ? "Online" : isUnavailable ? "Unavailable" : "Checking";
-
           return (
             <article className="microservice-card" key={service.key}>
               <div className="microservice-card-head">
                 <span className="microservice-icon" aria-hidden="true">{service.icon}</span>
-                <span className={`microservice-status ${isOnline ? "online" : isUnavailable ? "unavailable" : "checking"}`}>
-                  <span className="microservice-status-dot" />
-                  {status}
-                </span>
               </div>
               <div>
                 <h4>{service.name}</h4>
                 <p>{service.purpose}</p>
               </div>
-              <dl className="microservice-details">
-                <div><dt>API route</dt><dd><code>{service.api}</code></dd></div>
-                <div><dt>Example</dt><dd><code>{service.example}</code></dd></div>
-                <div><dt>Database</dt><dd><code>{service.database}</code></dd></div>
-                <div><dt>Cluster port</dt><dd><code>{service.port}</code></dd></div>
-              </dl>
-              <a
-                className="btn btn-secondary btn-sm microservice-health-link"
-                href={`${service.api}/health`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Open health endpoint ↗
-              </a>
+              <button className="btn btn-primary btn-sm microservice-feature-link" onClick={() => onNavigate(service.tab)}>
+                {service.feature} →
+              </button>
             </article>
           );
         })}
@@ -844,10 +1089,69 @@ function MicroservicesView({ healthStatus, isRefreshing, onRefresh }) {
   );
 }
 
-function CatalogView({ products, inventory, onAddToCart, onOpenNewProductModal }) {
+function PromotionsView({ promotions, onChoosePromotion, onBrowseCatalog }) {
+  return (
+    <section className="card promotions-page">
+      <div className="panel-head">
+        <div>
+          <span className="eyebrow">SAVINGS FOR YOUR ORDER</span>
+          <h3>Promotions</h3>
+        </div>
+        <button className="btn btn-primary" onClick={onBrowseCatalog}>Shop products →</button>
+      </div>
+      <p className="promotions-intro">Choose an offer, add products to your cart, and the Promotions service will validate the code against your order.</p>
+      {promotions.length ? (
+        <div className="promotion-grid">
+          {promotions.map((promotion) => (
+            <article className="promotion-card" key={promotion.code}>
+              <span className="promotion-kicker">ACTIVE OFFER</span>
+              <h4>{promotion.code}</h4>
+              <p>{promotion.description}</p>
+              <small>Minimum order: {money(promotion.minSubtotal)}</small>
+              <button className="btn btn-primary btn-sm" onClick={() => onChoosePromotion(promotion.code)}>
+                Use {promotion.code}
+              </button>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <div className="empty-state">There are no active promotions right now.</div>
+      )}
+    </section>
+  );
+}
+
+function CatalogView({ products, inventory, customerId, onAddToCart, onOpenNewProductModal }) {
   const [selectedCategory, setSelectedCategory] = useState("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("DEFAULT");
+  const [searchResults, setSearchResults] = useState(null);
+  const [searchError, setSearchError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    const timeout = setTimeout(async () => {
+      const params = new URLSearchParams();
+      if (searchQuery.trim()) params.set("q", searchQuery.trim());
+      if (selectedCategory !== "ALL") params.set("category", selectedCategory);
+      try {
+        const results = await request(`${URLs.search}/search?${params.toString()}`);
+        if (!cancelled) {
+          setSearchResults(results.map((product) => ({ ...product, id: Number(product.productId) })));
+          setSearchError("");
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setSearchResults(null);
+          setSearchError("Search is temporarily unavailable. Showing catalog matches instead.");
+        }
+      }
+    }, 200);
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+    };
+  }, [searchQuery, selectedCategory, products]);
 
   const categories = useMemo(() => {
     const set = new Set(products.map((p) => p.category).filter(Boolean));
@@ -855,7 +1159,8 @@ function CatalogView({ products, inventory, onAddToCart, onOpenNewProductModal }
   }, [products]);
 
   const filteredProducts = useMemo(() => {
-    return products
+    const source = searchResults ?? products;
+    return source
       .filter((p) => {
         const matchesCat = selectedCategory === "ALL" || p.category.toLowerCase() === selectedCategory.toLowerCase();
         const matchesSearch = `${p.name} ${p.category} ${p.description}`
@@ -869,7 +1174,7 @@ function CatalogView({ products, inventory, onAddToCart, onOpenNewProductModal }
         if (sortBy === "NAME_ASC") return a.name.localeCompare(b.name);
         return 0;
       });
-  }, [products, selectedCategory, searchQuery, sortBy]);
+  }, [products, searchResults, selectedCategory, searchQuery, sortBy]);
 
   return (
     <>
@@ -892,6 +1197,7 @@ function CatalogView({ products, inventory, onAddToCart, onOpenNewProductModal }
             placeholder="Search products..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            aria-label="Search products using product search"
           />
           <select className="select-sort" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
             <option value="DEFAULT">Sort By: Featured</option>
@@ -904,6 +1210,8 @@ function CatalogView({ products, inventory, onAddToCart, onOpenNewProductModal }
           </button>
         </div>
       </div>
+
+      {searchError && <p className="search-service-note">{searchError}</p>}
 
       <div className="product-grid">
         {filteredProducts.map((p) => {
@@ -928,6 +1236,8 @@ function CatalogView({ products, inventory, onAddToCart, onOpenNewProductModal }
               <h3>{p.name}</h3>
               <p className="product-desc">{p.description}</p>
 
+              <ProductReviews productId={p.id} customerId={customerId} />
+
               <div className="product-bottom">
                 <span className="product-price">{money(p.price)}</span>
                 <button
@@ -941,12 +1251,128 @@ function CatalogView({ products, inventory, onAddToCart, onOpenNewProductModal }
             </div>
           );
         })}
+        {!filteredProducts.length && <div className="empty-state">No products match your search.</div>}
       </div>
     </>
   );
 }
 
-function OrdersView({ orders, onPay, onCancel, onAdvance, onOpenCart }) {
+function ProductReviews({ productId, customerId }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [summary, setSummary] = useState(null);
+  const [reviews, setReviews] = useState([]);
+  const [rating, setRating] = useState("5");
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    request(`${URLs.reviews}/reviews/summary?productId=${productId}`)
+      .then(setSummary)
+      .catch((e) => setError(e.message));
+  }, [productId]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    let cancelled = false;
+    setIsLoading(true);
+    Promise.all([
+      request(`${URLs.reviews}/reviews/summary?productId=${productId}`),
+      request(`${URLs.reviews}/reviews?productId=${productId}`),
+    ]).then(([nextSummary, nextReviews]) => {
+      if (!cancelled) {
+        setSummary(nextSummary);
+        setReviews(nextReviews);
+        setError("");
+      }
+    }).catch((e) => {
+      if (!cancelled) setError(e.message);
+    }).finally(() => {
+      if (!cancelled) setIsLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [isOpen, productId]);
+
+  const submitReview = async (event) => {
+    event.preventDefault();
+    setIsSaving(true);
+    setError("");
+    try {
+      await request(`${URLs.reviews}/reviews`, {
+        method: "POST",
+        body: JSON.stringify({
+          productId,
+          customerId,
+          rating: Number(rating),
+          title,
+          body,
+        }),
+      });
+      setTitle("");
+      setBody("");
+      const [nextSummary, nextReviews] = await Promise.all([
+        request(`${URLs.reviews}/reviews/summary?productId=${productId}`),
+        request(`${URLs.reviews}/reviews?productId=${productId}`),
+      ]);
+      setSummary(nextSummary);
+      setReviews(nextReviews);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <section className="product-reviews">
+      <div className="product-review-summary">
+        <span className="review-rating">
+          {summary?.count ? `★ ${Number(summary.averageRating).toFixed(1)} · ${summary.count} review${summary.count === 1 ? "" : "s"}` : "No reviews yet"}
+        </span>
+        <button className="review-toggle" onClick={() => setIsOpen((open) => !open)}>
+          {isOpen ? "Hide reviews" : summary?.count ? "Reviews & rating" : "Write a review"}
+        </button>
+      </div>
+      {isOpen && (
+        <div className="product-review-panel">
+          <strong>Customer reviews</strong>
+          {isLoading ? <small>Loading reviews…</small> : reviews.length ? (
+            <div className="product-review-list">
+              {reviews.map((review) => (
+                <article className="product-review-entry" key={review.id}>
+                  <div><strong>{"★".repeat(review.rating)}{"☆".repeat(5 - review.rating)}</strong><small>{review.customerId}</small></div>
+                  {review.title && <b>{review.title}</b>}
+                  {review.body && <p>{review.body}</p>}
+                </article>
+              ))}
+            </div>
+          ) : <small>Be the first to review this product.</small>}
+
+          <form className="review-form" onSubmit={submitReview}>
+            <label className="checkout-field">
+              Your rating
+              <select value={rating} onChange={(e) => setRating(e.target.value)}>
+                <option value="5">5 stars</option>
+                <option value="4">4 stars</option>
+                <option value="3">3 stars</option>
+                <option value="2">2 stars</option>
+                <option value="1">1 star</option>
+              </select>
+            </label>
+            <input value={title} maxLength={200} placeholder="Review title (optional)" onChange={(e) => setTitle(e.target.value)} />
+            <textarea value={body} maxLength={5000} rows={3} placeholder="What should other shoppers know?" onChange={(e) => setBody(e.target.value)} />
+            {error && <small className="inline-error">{error}</small>}
+            <button className="btn btn-secondary btn-sm" disabled={isSaving}>{isSaving ? "Posting…" : "Post review"}</button>
+          </form>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function OrdersView({ orders, shipments, onPay, onCancel, onAdvance, onAdvanceShipment, onOpenCart }) {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [orderSearch, setOrderSearch] = useState("");
 
@@ -992,16 +1418,18 @@ function OrdersView({ orders, onPay, onCancel, onAdvance, onOpenCart }) {
       <div className="card">
         <OrderTable
           orders={filteredOrders}
+          shipments={shipments}
           pay={onPay}
           cancel={onCancel}
           advance={onAdvance}
+          advanceShipment={onAdvanceShipment}
         />
       </div>
     </>
   );
 }
 
-function OrderTable({ orders, pay, cancel, advance }) {
+function OrderTable({ orders, shipments = [], pay, cancel, advance, advanceShipment }) {
   const getPill = (status) => {
     switch (status) {
       case "PAID":
@@ -1034,7 +1462,14 @@ function OrderTable({ orders, pay, cancel, advance }) {
           </tr>
         </thead>
         <tbody>
-          {orders.map((o) => (
+          {orders.map((o) => {
+            const shipment = shipments.find((item) => Number(item.orderId) === Number(o.id));
+            const nextShipmentStatus = {
+              LABEL_CREATED: "IN_TRANSIT",
+              IN_TRANSIT: "OUT_FOR_DELIVERY",
+              OUT_FOR_DELIVERY: "DELIVERED",
+            }[shipment?.status];
+            return (
             <tr key={o.id}>
               <td>
                 <strong style={{ color: "#fff" }}>#{o.id}</strong>
@@ -1042,8 +1477,24 @@ function OrderTable({ orders, pay, cancel, advance }) {
               <td>{o.user_email}</td>
               <td>
                 <strong style={{ color: "#fff" }}>{money(o.total)}</strong>
+                {Number(o.discount_amount || 0) > 0 && (
+                  <small className="order-promotion-note">{o.promotion_code} saved {money(o.discount_amount)}</small>
+                )}
               </td>
-              <td>{getPill(o.status)}</td>
+              <td>
+                {getPill(o.status)}
+                {shipment && (
+                  <div className="order-shipment">
+                    <small>{shipment.status.replaceAll("_", " ")}</small>
+                    <code>{shipment.trackingNumber}</code>
+                    {nextShipmentStatus && advanceShipment && (
+                      <button className="shipment-advance" onClick={() => advanceShipment(shipment)}>
+                        Mark {nextShipmentStatus.replaceAll("_", " ").toLowerCase()} →
+                      </button>
+                    )}
+                  </div>
+                )}
+              </td>
               <td>
                 <div className="order-stepper">
                   <span className={`step-dot ${["CREATED", "PAID", "PROCESSING", "SHIPPED"].includes(o.status) ? "done" : ""}`} />
@@ -1078,7 +1529,8 @@ function OrderTable({ orders, pay, cancel, advance }) {
                 </div>
               </td>
             </tr>
-          ))}
+            );
+          })}
           {!orders.length && (
             <tr>
               <td colSpan="7" className="empty-state">

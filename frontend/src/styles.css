@@ -681,7 +681,7 @@ header.top-header {
   overflow-wrap: anywhere;
 }
 
-.microservice-health-link {
+.microservice-feature-link {
   align-self: flex-start;
   margin-top: auto;
   text-decoration: none;
@@ -835,6 +835,262 @@ header.top-header {
   font-size: 22px;
   font-weight: 800;
   color: #fff;
+}
+
+.search-service-note {
+  margin-top: 12px;
+  color: var(--text-faint);
+  font-size: 12px;
+}
+
+.product-reviews {
+  margin: 0 0 14px;
+  padding: 11px 0;
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.product-review-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.review-rating {
+  color: #fbbf24;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.review-toggle, .shipment-advance {
+  padding: 4px 0;
+  background: transparent;
+  color: var(--accent-cyan);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.review-toggle:hover, .shipment-advance:hover {
+  color: #fff;
+}
+
+.product-review-panel {
+  display: grid;
+  gap: 10px;
+  padding-top: 12px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.product-review-panel > strong {
+  color: #fff;
+}
+
+.product-review-list {
+  display: grid;
+  gap: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.product-review-entry {
+  display: grid;
+  gap: 4px;
+  padding: 9px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.product-review-entry > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: #fbbf24;
+}
+
+.product-review-entry small {
+  color: var(--text-faint);
+  font-size: 10px;
+}
+
+.product-review-entry b {
+  color: #fff;
+}
+
+.product-review-entry p {
+  color: var(--text-muted);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.review-form {
+  display: grid;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.review-form input, .review-form textarea, .review-form select,
+.checkout-field input, .promotion-entry input {
+  width: 100%;
+  min-width: 0;
+  padding: 9px 11px;
+  color: #fff;
+  background: var(--bg-app);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-sm);
+  outline: none;
+}
+
+.review-form textarea {
+  resize: vertical;
+}
+
+.review-form input:focus, .review-form textarea:focus, .review-form select:focus,
+.checkout-field input:focus, .promotion-entry input:focus {
+  border-color: var(--border-focus);
+}
+
+.inline-error {
+  color: #fca5a5;
+}
+
+.promotions-page, .promotions-intro {
+  color: var(--text-muted);
+}
+
+.promotions-intro {
+  margin: 8px 0 20px;
+  font-size: 13px;
+}
+
+.promotion-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 14px;
+}
+
+.promotion-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 205px;
+  padding: 20px;
+  background: var(--bg-sidebar);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+}
+
+.promotion-card h4 {
+  color: #fff;
+  font-size: 22px;
+  letter-spacing: 0.5px;
+}
+
+.promotion-card p {
+  flex: 1;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.promotion-card small, .promotion-kicker {
+  color: var(--text-faint);
+  font-size: 10px;
+}
+
+.promotion-kicker {
+  color: var(--accent-success);
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.checkout-form {
+  max-height: 52vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.checkout-address, .checkout-promotion {
+  display: grid;
+  gap: 10px;
+}
+
+.checkout-address > strong {
+  color: #fff;
+  font-size: 13px;
+}
+
+.checkout-field {
+  display: grid;
+  gap: 5px;
+  color: var(--text-faint);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.checkout-address-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+
+.checkout-promotion small {
+  color: var(--text-faint);
+  font-size: 10px;
+}
+
+.checkout-promotion .promotion-applied, .bill-line.promotion-savings {
+  color: var(--accent-success);
+}
+
+.promotion-entry {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.order-promotion-note {
+  display: block;
+  margin-top: 4px;
+  color: var(--accent-success);
+  font-size: 10px;
+}
+
+.order-shipment {
+  display: grid;
+  justify-items: start;
+  gap: 3px;
+  margin-top: 7px;
+  max-width: 170px;
+}
+
+.order-shipment small {
+  color: var(--accent-cyan);
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.order-shipment code {
+  color: var(--text-muted);
+  font-size: 9px;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 600px) {
+  .checkout-address-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .checkout-form {
+    max-height: 58vh;
+  }
 }
 
 /* Pills & Badges */
