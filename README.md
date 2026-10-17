@@ -1,6 +1,6 @@
-# Polyglot eCommerce Platform — v1.0.4
+# Lumaire — eCommerce Platform v1.0.4
 
-An AWS EKS based eCommerce demo composed of a React storefront and 12 REST services. Each service owns a PostgreSQL database. Helm packages the application, Terraform provisions the AWS foundation, and Argo CD can reconcile a separate GitOps repository onto the cluster.
+Lumaire is an AWS EKS based eCommerce application composed of a React storefront and 12 REST services. Each service owns a PostgreSQL database. Helm packages the application, Terraform provisions the AWS foundation, and Argo CD can reconcile a separate GitOps repository onto the cluster.
 
 This branch adds an optional Amazon MSK order-event path. The order service writes events to a PostgreSQL outbox, publishes them to Kafka, and a worker creates customer notifications. Kafka is disabled in the Helm values by default; see [Kafka and AWS Secrets Manager](docs/kafka-msk-secrets.md) to enable it.
 
@@ -13,6 +13,7 @@ This branch adds an optional Amazon MSK order-event path. The order service writ
 - [Provision AWS infrastructure](#provision-aws-infrastructure)
 - [Deploy the application](#deploy-the-application)
 - [Build and release workflow](#build-and-release-workflow)
+- [CI security setup](#ci-security-setup)
 - [Configure Kafka notifications](#configure-kafka-notifications)
 - [Verify the deployment](#verify-the-deployment)
 - [API examples](#api-examples)
@@ -66,17 +67,19 @@ All API services expose `GET /health`, available through the corresponding `/api
 
 ```text
 .
-├── .github/workflows/ci.yml       # Chart validation and container image builds
+├── .github/workflows/ci.yml       # Quality gates, image scans, ECR publishing and GitOps PRs
 ├── argocd/application.yaml        # Argo CD Application for the external GitOps repo
 ├── database/                      # Per-service SQL schema/reference scripts
 ├── docs/
 │   ├── API-EXAMPLES.md             # Request examples for the added APIs
+│   ├── ci-security-setup.md        # GitHub Actions OIDC, ECR and GitOps setup
 │   └── kafka-msk-secrets.md        # MSK, Secrets Manager and IRSA setup
 ├── frontend/                      # React 19 + Vite UI, packaged with Nginx
 ├── helm/ecommerce/                # Kubernetes chart, values and templates
 ├── guides/                        # CI/CD, Helm, Argo CD and observability guides
 ├── scripts/health-check.sh        # Checks UI and all 12 API health routes
 ├── services/                      # API services and Kafka notification worker
+├── sonar-project.properties        # SonarQube source scope and project key
 ├── terraform/
 │   ├── environments/dev/           # Development AWS environment
 │   └── modules/                   # VPC, IAM, EKS, ECR, ACM, add-ons and MSK
@@ -91,7 +94,8 @@ For the AWS deployment path, have:
 - Terraform 1.10 or newer. The configured S3 backend uses native lockfile locking.
 - An S3 bucket created before `terraform init`; the bucket name and key are configured in `terraform/environments/dev/backend.tf`.
 - AWS CLI, `kubectl`, Helm 3, and network access to the AWS APIs and container registry.
-- A GitHub repository configured with `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` Actions secrets to let CI push images to ECR. The `GITOPS_TOKEN` secret is needed for the workflow's `main`-branch GitOps update.
+- A SonarQube Server reachable from GitHub Actions, configured with the `SONAR_HOST_URL` repository variable and `SONAR_TOKEN` repository secret. The token must analyze the `ecommerce-platform` and `ecommerce-platform-payment-service` projects.
+- GitHub Actions configured with the `AWS_ROLE_ARN` repository variable for short-lived AWS OIDC access, plus `SONAR_HOST_URL` and `SONAR_TOKEN` for SonarQube. The `GITOPS_TOKEN` secret needs permission to create a pull request in `rajkumargudala/ecommerce-gitops`. See [CI security setup](docs/ci-security-setup.md).
 
 The default region is `us-east-1`. Review the Terraform variables and Helm values before provisioning or deploying. The development environment creates billable AWS infrastructure, including EKS worker nodes, NAT, MSK, storage, and load balancing.
 
@@ -122,7 +126,7 @@ Terraform generates the MSK SCRAM password and stores it in Secrets Manager. Pro
 
 ### Prepare image tags
 
-The chart reads image tags from `helm/ecommerce/values.yaml`. CI publishes images to the configured ECR repository with both a stable service tag (for example, `catalog-service`) and an immutable commit tag (for example, `catalog-service-<commit-sha>`). Before a manual deployment, set the chart values to tags that exist in your registry. The defaults checked into this branch are not automatically changed by a `version-1.0.4` build.
+The chart reads image tags from `helm/ecommerce/values.yaml`. CI publishes images to the configured ECR repository with immutable tags in the form `<service>-<commit-sha>-<run-id>-<attempt>`. Before a manual deployment, set the chart values to tags that exist in your registry. The defaults checked into this branch are not automatically changed by a `version-1.0.4` build.
 
 ### Deploy with Helm
 
@@ -150,15 +154,24 @@ To deploy v1.0.4 through GitOps, promote the v1.0.4 image tags and compatible ch
 
 ## Build and release workflow
 
-The GitHub Actions workflow in `.github/workflows/ci.yml` runs chart linting and template rendering, then builds container images with Docker Buildx for the frontend, 12 API services, and Kafka notification worker. Image tags use the service name and commit SHA.
+The GitHub Actions workflow in `.github/workflows/ci.yml` validates the Helm chart, enforces SonarQube quality gates, scans dependencies and configuration with Trivy, then builds and scans local container images before publishing. It covers the frontend, 12 API services, and Kafka notification worker. A CycloneDX SBOM for each image is uploaded as a 30-day workflow artifact. ECR tags combine the service name, source commit, workflow run ID, and retry attempt; the ECR repository rejects tag overwrites.
+
+The SonarQube project is named **Lumaire**. Its stable analysis key is `ecommerce-platform`; the .NET payment project is named **Lumaire Payment Service** and uses the key `ecommerce-platform-payment-service`. Ensure both project keys exist on the SonarQube server or that the token can create them. Trivy blocks HIGH and CRITICAL vulnerabilities, secrets, and configuration findings before an image is published. Fork and Dependabot pull requests skip SonarQube because repository secrets are unavailable to them; the other CI checks still run.
+
+The auth service's Maven `verify` phase runs any available Java tests. The repository currently has no unit or integration test suites for the other services, so those still need to be added before the pipeline can provide broad application-level test coverage.
 
 The workflow behavior differs by branch:
 
-- Pull requests targeting `main` or `version-1.0.4` validate the chart and build images without pushing them.
+- Pull requests targeting `main` or `version-1.0.4` validate the chart, run available SonarQube and Trivy gates, and build and scan images without pushing them. Require the `CI gate` status check in GitHub branch protection.
 - Pushes to `version-1.0.4` publish images to ECR. They do **not** update the GitOps repository or deploy the release automatically.
-- Pushes to `main` publish images and run the GitOps update job, which commits updated image tags to `rajkumargudala/ecommerce-gitops` on `main`.
+- Pushes to `main` publish images and open a pull request with the image tag updates in `rajkumargudala/ecommerce-gitops`. The production environment must be configured with required reviewers. After the GitOps pull request passes its checks and is merged, Argo CD deploys it if its target revision tracks `main`.
+- Manual workflow runs build and scan images but do not publish them.
 
-The checked-in Argo CD Application follows `gitops-release-1.0.3`, while the `main` CI job writes to the GitOps repository's `main` branch. Those settings are independent; update the Argo CD target revision and GitOps values when promoting a release.
+The checked-in Argo CD Application follows `gitops-release-1.0.3`, while CI proposes image updates against the GitOps repository's `main` branch. Argo CD deploys those changes only when its target revision is aligned with the branch receiving the merged promotion. See [the CI/CD and Argo CD guide](guides/cicd-helm-argocd.md).
+
+## CI security setup
+
+Configure GitHub Actions OIDC and the `production` environment before enabling ECR publishing. Follow [the CI security setup guide](docs/ci-security-setup.md) for the AWS role trust policy, least-privilege ECR permissions, GitHub variables and secrets, and required environment protections. Remove any old long-lived AWS access-key secrets after OIDC publishing succeeds.
 
 ## Configure Kafka notifications
 

@@ -1,4 +1,4 @@
-name: CI/CD - Build, Push to ECR & Update Helm Values
+name: Lumaire CI/CD
 
 on:
   push:
@@ -10,6 +10,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 env:
   AWS_REGION: us-east-1
   ECR_REPOSITORY: ecommerce-platform
@@ -17,26 +21,137 @@ env:
 jobs:
   validate-chart:
     name: Lint Helm Chart
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Set up Helm
-        uses: azure/setup-helm@v4
+        uses: azure/setup-helm@b9e51907a09c216f16ebe8536097933489208112 # v4.3.0
 
       - name: Lint Ecommerce Helm Chart
         run: |
           helm lint helm/ecommerce
           helm template test-release helm/ecommerce > /dev/null
           echo "Helm chart is valid!"
+  sonarqube:
+    name: SonarQube analysis
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+
+      - name: Check SonarQube configuration
+        id: sonar-config
+        env:
+          SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          UNSAFE_PR: ${{ github.event_name == 'pull_request' && (github.event.pull_request.head.repo.fork || github.actor == 'dependabot[bot]') || false }}
+        run: |
+          if [[ -n "$SONAR_HOST_URL" && -n "$SONAR_TOKEN" ]]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          elif [[ "$GITHUB_EVENT_NAME" == "pull_request" && "$UNSAFE_PR" == "true" ]]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::SonarQube scan skipped because repository secrets are not available to fork or Dependabot pull requests."
+          else
+            echo "::error::Configure SONAR_HOST_URL as a repository variable and SONAR_TOKEN as a repository secret."
+            exit 1
+          fi
+
+      - name: Set up Java for the Maven service
+        if: steps.sonar-config.outputs.enabled == 'true'
+        uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: services/auth-service/pom.xml
+
+      - name: Compile Java sources for analysis
+        if: steps.sonar-config.outputs.enabled == 'true'
+        run: mvn -B -f services/auth-service/pom.xml verify
+
+      - name: Scan polyglot sources
+        if: steps.sonar-config.outputs.enabled == 'true'
+        uses: SonarSource/sonarqube-scan-action@d209202bc7d53ff1cc128f7f907dac145c9d6ae9 # v8.3.0
+        env:
+          SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: Set up .NET for the payment service
+        if: steps.sonar-config.outputs.enabled == 'true'
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Install SonarScanner for .NET
+        if: steps.sonar-config.outputs.enabled == 'true'
+        run: |
+          dotnet tool install --global dotnet-sonarscanner
+          echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+
+      - name: Begin .NET SonarQube analysis
+        if: steps.sonar-config.outputs.enabled == 'true'
+        env:
+          SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: >-
+          dotnet sonarscanner begin
+          /k:"ecommerce-platform-payment-service"
+          /n:"Lumaire Payment Service"
+          /d:sonar.host.url="$SONAR_HOST_URL"
+          /d:sonar.token="$SONAR_TOKEN"
+          /d:sonar.qualitygate.wait=true
+
+      - name: Build payment service for analysis
+        if: steps.sonar-config.outputs.enabled == 'true'
+        run: dotnet build services/payment-service/payment-service.csproj --configuration Release
+
+      - name: End .NET SonarQube analysis
+        if: steps.sonar-config.outputs.enabled == 'true'
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: dotnet sonarscanner end /d:sonar.token="$SONAR_TOKEN"
+
+  trivy-filesystem:
+    name: Trivy dependency scan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Set up Trivy
+        uses: aquasecurity/setup-trivy@3fb12ec12f41e471780db15c232d5dd185dcb514 # v0.2.6
+        with:
+          version: v0.70.0
+
+      - name: Scan dependency manifests and lockfiles
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,misconfig,secret
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+          version: v0.70.0
+          skip-setup-trivy: 'true'
 
   build-and-push:
-    name: Build & Push ${{ matrix.service }}
-    runs-on: ubuntu-latest
-    needs: validate-chart
+    name: Build, scan & publish ${{ matrix.service }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      id-token: write
+    needs: [validate-chart, sonarqube, trivy-filesystem]
     strategy:
       fail-fast: false
+      max-parallel: 4
       matrix:
         include:
           - service: auth-service
@@ -70,43 +185,95 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
 
-      
+      - name: Set up Trivy
+        uses: aquasecurity/setup-trivy@3fb12ec12f41e471780db15c232d5dd185dcb514 # v0.2.6
+        with:
+          version: v0.70.0
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/version-1.0.4')
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          role-session-name: LumaireCI-${{ github.run_id }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Log in to Amazon ECR
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/version-1.0.4')
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
+        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
 
-      - name: Build and Push Docker Image
-        uses: docker/build-push-action@v6
+      - name: Build Docker Image
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
         with:
           context: ${{ matrix.path }}
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: |
-            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ matrix.service }}
-            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ matrix.service }}-${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          load: true
+          tags: local/${{ matrix.service }}:${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,scope=${{ matrix.service }},mode=max
+
+      - name: Scan image with Trivy
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: image
+          image-ref: local/${{ matrix.service }}:${{ github.sha }}
+          scanners: vuln,secret
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+          version: v0.70.0
+          skip-setup-trivy: 'true'
+
+      - name: Generate image SBOM
+        env:
+          LOCAL_IMAGE: local/${{ matrix.service }}:${{ github.sha }}
+          SERVICE: ${{ matrix.service }}
+        run: trivy image --format cyclonedx --output "sbom-${SERVICE}-${GITHUB_SHA}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.cdx.json" "$LOCAL_IMAGE"
+
+      - name: Upload image SBOM
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: sbom-${{ matrix.service }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: sbom-${{ matrix.service }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}.cdx.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Push scanned image to Amazon ECR
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/version-1.0.4')
+        env:
+          LOCAL_IMAGE: local/${{ matrix.service }}:${{ github.sha }}
+          SERVICE: ${{ matrix.service }}
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          IMAGE_REPOSITORY="$ECR_REGISTRY/$ECR_REPOSITORY"
+          IMAGE_TAG="$SERVICE-$GITHUB_SHA-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          docker tag "$LOCAL_IMAGE" "$IMAGE_REPOSITORY:$IMAGE_TAG"
+          docker push "$IMAGE_REPOSITORY:$IMAGE_TAG"
+
+  ci-gate:
+    name: CI gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    needs: [validate-chart, sonarqube, trivy-filesystem, build-and-push]
+    steps:
+      - name: Confirm required CI checks passed
+        run: echo "All required CI checks passed."
 
   update-git-manifests:
-    name: Update Image Tags in GitOps Repository
-    runs-on: ubuntu-latest
-    needs: build-and-push
+    name: Propose Image Tag Update in GitOps Repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    needs: ci-gate
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment:
+      name: production
     steps:
       - name: Checkout GitOps Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           repository: rajkumargudala/ecommerce-gitops
           ref: main
@@ -116,7 +283,7 @@ jobs:
 
       - name: Update Helm Values with New Image Tags
         env:
-          TAG: ${{ github.sha }}
+          TAG: "${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}"
         run: |
           python3 - <<'PY'
           import os
@@ -187,16 +354,36 @@ jobs:
           values_path.write_text("".join(lines))
           PY
 
-      - name: Commit and Push Updated Helm Values
+      - name: Create or Update GitOps Promotion Pull Request
         env:
-          GITOPS_BRANCH: main
+          GITOPS_BRANCH: automation/lumaire-image-promotion
+          GH_TOKEN: ${{ secrets.GITOPS_TOKEN }}
         run: |
           git -C gitops config user.name "github-actions[bot]"
-          git -C gitops config user.email "github-actions[bot]@users.noreply.github.com"
+          git -C gitops config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C gitops switch --force-create "$GITOPS_BRANCH"
           git -C gitops add helm/values.yaml
-          if git -C gitops diff --cached --quiet; then
-            echo "No changes to commit."
-          else
-            git -C gitops commit -m "ci(gitops): update image tags to ${GITHUB_SHA} [skip ci]"
-            git -C gitops push origin "HEAD:${GITOPS_BRANCH}"
-          fi
+          git -C gitops commit -m "ci(gitops): promote Lumaire images from ${GITHUB_SHA}"
+          REMOTE_SHA=$(git -C gitops ls-remote origin "refs/heads/$GITOPS_BRANCH" | cut -f1)
+          git -C gitops push \
+            --force-with-lease="refs/heads/$GITOPS_BRANCH:$REMOTE_SHA" \
+            --set-upstream origin "$GITOPS_BRANCH"
+          (
+            cd gitops
+            OPEN_PR_COUNT=$(gh pr list \
+              --repo rajkumargudala/ecommerce-gitops \
+              --state open \
+              --head "$GITOPS_BRANCH" \
+              --json number \
+              --jq 'length')
+            if [[ "$OPEN_PR_COUNT" == "0" ]]; then
+              gh pr create \
+                --repo rajkumargudala/ecommerce-gitops \
+                --base main \
+                --head "$GITOPS_BRANCH" \
+                --title "ci(gitops): promote Lumaire images from ${GITHUB_SHA}" \
+                --body "Promote image tags produced by source commit ${GITHUB_SHA}. Review the GitOps diff and merge to deploy."
+            else
+              echo "Updated the existing GitOps promotion pull request."
+            fi
+          )

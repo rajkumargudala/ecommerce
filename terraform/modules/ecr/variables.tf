@@ -4,9 +4,9 @@ variable "repository_name" {
 }
 
 variable "max_image_count" {
-  description = "How many recent images to retain (lifecycle policy)."
+  description = "How many recent images to retain (about 20 full releases at 14 images each)."
   type        = number
-  default     = 40
+  default     = 280
 }
 
 variable "tags" {
