@@ -2,9 +2,9 @@ name: CI/CD - Build, Push to ECR & Update Helm Values
 
 on:
   push:
-    branches: [ "master", "release-1.0.3" ]
+    branches: [ "main", "version-1.0.4" ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ "main", "version-1.0.4" ]
   workflow_dispatch:
 
 permissions:
@@ -63,6 +63,8 @@ jobs:
             path: services/promotions-service
           - service: search-service
             path: services/search-service
+          - service: kafka-notification-worker
+            path: services/kafka-notification-worker
           - service: frontend
             path: frontend
 
@@ -101,13 +103,13 @@ jobs:
     name: Update Image Tags in GitOps Repository
     runs-on: ubuntu-latest
     needs: build-and-push
-    if: (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/release-1.0.3') && github.event_name == 'push'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
       - name: Checkout GitOps Repository
         uses: actions/checkout@v4
         with:
           repository: rajkumargudala/ecommerce-gitops
-          ref: ${{ github.ref == 'refs/heads/release-1.0.3' && 'gitops-release-1.0.3' || 'main' }}
+          ref: main
           path: gitops
           token: ${{ secrets.GITOPS_TOKEN }}
           fetch-depth: 0
@@ -157,6 +159,27 @@ jobs:
                   lines[index] = f"  tag: {all_image_tags[current_section]}{newline}"
                   updated.add(current_section)
 
+          kafka_parent = False
+          kafka_worker = False
+          for index, line in enumerate(lines):
+              if re.match(r"^kafka:\s*(?:#.*)?(?:\r?\n)?$", line):
+                  kafka_parent = True
+                  kafka_worker = False
+                  continue
+              if re.match(r"^[A-Za-z][A-Za-z0-9_-]*:\s*(?:#.*)?(?:\r?\n)?$", line):
+                  kafka_parent = False
+                  kafka_worker = False
+                  continue
+              if kafka_parent and re.match(r"^  notificationWorker:\s*(?:#.*)?(?:\r?\n)?$", line):
+                  kafka_worker = True
+                  continue
+              if kafka_parent and re.match(r"^  [A-Za-z][A-Za-z0-9_-]*:", line):
+                  kafka_worker = False
+              if kafka_parent and kafka_worker and re.match(r"^    tag:\s*", line):
+                  newline = "\n" if line.endswith("\n") else ""
+                  lines[index] = f"    tag: kafka-notification-worker-{tag}{newline}"
+                  updated.add("kafka.notificationWorker")
+
           missing = sorted(set(image_tags) - updated)
           if missing:
               raise SystemExit("Missing top-level tag entries in GitOps values.yaml: " + ", ".join(missing))
@@ -166,7 +189,7 @@ jobs:
 
       - name: Commit and Push Updated Helm Values
         env:
-        GITOPS_BRANCH: ${{ github.ref == 'refs/heads/release-1.0.3' && 'gitops-release-1.0.3' || 'main' }}
+          GITOPS_BRANCH: main
         run: |
           git -C gitops config user.name "github-actions[bot]"
           git -C gitops config user.email "github-actions[bot]@users.noreply.github.com"

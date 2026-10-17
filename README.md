@@ -21,9 +21,9 @@ An enterprise, cloud-native eCommerce platform built using **seven distinct prog
   - `promotions-db` (Promotions Service - Python FastAPI)
   - `search-db` (Product Search Service - Python FastAPI)
 - **Automated GitOps Continuous Delivery**:
-  - Code pushed to `master` or `feature` triggers `.github/workflows/ci.yml`.
+  - Code pushed to `main` or `version-1.0.4` triggers `.github/workflows/ci.yml`.
   - Images are built in parallel and published to Amazon ECR.
-  - `master` updates image tags on `main` in `rajkumargudala/ecommerce-gitops`; `feature` updates tags on `version-2`.
+  - `main` updates image tags on `main` in `rajkumargudala/ecommerce-gitops`; `version-1.0.4` builds and publishes its service images.
   - ArgoCD reconciles the cluster to the desired state.
 - **Modernized Enterprise UI**:
   - Redesigned with a modern design system (dark slate & vibrant accents).
@@ -32,7 +32,10 @@ An enterprise, cloud-native eCommerce platform built using **seven distinct prog
   - Multi-stage Order Lifecycle Stepper (`Created ➔ Paid ➔ Processing ➔ Shipped`).
   - Real-time stock health visualization and batch restocking.
 - **Infrastructure as Code**:
-  - Complete AWS foundation maintained in `terraform/` (VPC, IAM, EKS, ECR, ACM, Addons).
+  - AWS foundation maintained in `terraform/` (VPC, IAM, EKS, ECR, ACM, Addons, MSK, and Secrets Manager).
+- **Event-driven order notifications**:
+  - Orders publish through an outbox to Amazon MSK; a Kafka worker persists order notifications.
+  - MSK SCRAM credentials are read at runtime from AWS Secrets Manager using EKS IRSA.
 
 ---
 
@@ -93,14 +96,17 @@ An enterprise, cloud-native eCommerce platform built using **seven distinct prog
 │   ├── shipping-service/       # Python 3.11 / FastAPI
 │   ├── reviews-service/        # Python 3.11 / FastAPI
 │   ├── promotions-service/     # Python 3.11 / FastAPI
-│   └── search-service/         # Python 3.11 / FastAPI
+│   ├── search-service/         # Python 3.11 / FastAPI
+│   └── kafka-notification-worker/ # Python Kafka consumer for order events
 ├── terraform/                   # AWS Infrastructure Foundation
 │   ├── environments/dev/        # Dev environment entry point
-│   └── modules/                 # Reusable modules (VPC, IAM, EKS, ECR, ACM, Addons)
+│   └── modules/                 # Reusable modules (VPC, IAM, EKS, ECR, ACM, Addons, Kafka)
 └── ARCHITECTURE.md              # Detailed architecture documentation
 ```
 
 The five new APIs are available through Nginx at `/api/cart`, `/api/shipping`, `/api/reviews`, `/api/promotions`, and `/api/search`. See [`docs/API-EXAMPLES.md`](docs/API-EXAMPLES.md) for request examples and the product-search indexing workflow.
+
+See [`docs/kafka-msk-secrets.md`](docs/kafka-msk-secrets.md) to provision MSK and configure the deployment to retrieve its SCRAM credentials from Secrets Manager.
 
 ---
 

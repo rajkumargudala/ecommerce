@@ -4,6 +4,26 @@ global:
   imageRepository: ecommerce-platform
   imagePullPolicy: IfNotPresent
 
+# MSK settings come from terraform output in the dev environment. Enable Kafka
+# once those non-secret values are supplied to the deployment values file.
+kafka:
+  enabled: false
+  bootstrapServers: ""
+  secretArn: ""
+  secretReaderRoleArn: ""
+  awsRegion: us-east-1
+  ordersTopic: orders.created
+  consumerGroupId: notification-service
+  notificationWorker:
+    tag: kafka-notification-worker
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
+
 # Default configuration for dedicated databases (Database-per-Service architecture)
 databaseDefaults:
   image:

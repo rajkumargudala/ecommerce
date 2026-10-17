@@ -1,0 +1,49 @@
+{{- if and .Values.kafka.enabled .Values.notification.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-notification-worker
+  labels:
+    app: kafka-notification-worker
+    {{- include "ecommerce.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-notification-worker
+  template:
+    metadata:
+      labels:
+        app: kafka-notification-worker
+    spec:
+      serviceAccountName: ecommerce-kafka-client
+      containers:
+        - name: kafka-notification-worker
+          image: "{{ .Values.global.imageRegistry }}/{{ .Values.global.imageRepository }}:{{ .Values.kafka.notificationWorker.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          env:
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: notification-db-secret
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: notification-db-secret
+                  key: password
+            - name: NOTIFICATION_DB_URL
+              value: "postgres://$(DB_USER):$(DB_PASSWORD)@{{ .Values.notification.database.host }}:{{ .Values.notification.database.port }}/{{ .Values.notification.database.name }}"
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: {{ required "kafka.bootstrapServers is required when Kafka is enabled" .Values.kafka.bootstrapServers | quote }}
+            - name: KAFKA_SECRET_ARN
+              value: {{ required "kafka.secretArn is required when Kafka is enabled" .Values.kafka.secretArn | quote }}
+            - name: AWS_REGION
+              value: {{ .Values.kafka.awsRegion | quote }}
+            - name: KAFKA_ORDERS_TOPIC
+              value: {{ .Values.kafka.ordersTopic | quote }}
+            - name: KAFKA_GROUP_ID
+              value: {{ .Values.kafka.consumerGroupId | quote }}
+          resources:
+            {{- toYaml .Values.kafka.notificationWorker.resources | nindent 12 }}
+{{- end }}
