@@ -1,16 +1,9 @@
 import os
-import json
-import logging
-import threading
-from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Literal
-from uuid import uuid4
 
-import boto3
 import httpx
 import psycopg2
-from kafka import KafkaProducer
 from psycopg2.extras import RealDictCursor, Json
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -24,20 +17,6 @@ CATALOG_URL = os.getenv("CATALOG_URL", "http://catalog-service:8082")
 INVENTORY_URL = os.getenv("INVENTORY_URL", "http://inventory-service:8083")
 NOTIFICATION_URL = os.getenv("NOTIFICATION_URL", "http://notification-service:8086")
 PROMOTIONS_URL = os.getenv("PROMOTIONS_URL", "http://promotions-service:8091")
-KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "")
-KAFKA_SECRET_ARN = os.getenv("KAFKA_SECRET_ARN", "")
-AWS_REGION = os.getenv("AWS_REGION", os.getenv("AWS_DEFAULT_REGION", "us-east-1"))
-KAFKA_ORDERS_TOPIC = os.getenv("KAFKA_ORDERS_TOPIC", "orders.created")
-KAFKA_ENABLED = bool(KAFKA_BOOTSTRAP_SERVERS or KAFKA_SECRET_ARN)
-
-if KAFKA_ENABLED and not (KAFKA_BOOTSTRAP_SERVERS and KAFKA_SECRET_ARN):
-    raise RuntimeError("KAFKA_BOOTSTRAP_SERVERS and KAFKA_SECRET_ARN must both be configured")
-
-logger = logging.getLogger("order-service")
-_producer = None
-_producer_lock = threading.Lock()
-_dispatcher_stop = threading.Event()
-_dispatcher_thread = None
 
 app = FastAPI(title="DevOps Shack Order Service", version="1.0.0")
 app.add_middleware(
@@ -68,123 +47,8 @@ def migrate():
             cur.execute("ALTER TABLE orders ADD COLUMN IF NOT EXISTS discount_amount NUMERIC(12,2) NOT NULL DEFAULT 0")
             cur.execute("ALTER TABLE orders ADD COLUMN IF NOT EXISTS promotion_code VARCHAR(80)")
             cur.execute("UPDATE orders SET subtotal=total WHERE subtotal IS NULL")
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS order_event_outbox (
-                    event_id UUID PRIMARY KEY,
-                    event_type VARCHAR(100) NOT NULL,
-                    payload JSONB NOT NULL,
-                    dispatchable BOOLEAN NOT NULL DEFAULT FALSE,
-                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-                    published_at TIMESTAMPTZ
-                )
-            """)
-            cur.execute("""
-                CREATE INDEX IF NOT EXISTS order_event_outbox_pending_idx
-                ON order_event_outbox(created_at)
-                WHERE dispatchable=TRUE AND published_at IS NULL
-            """)
 
 migrate()
-
-
-def kafka_producer():
-    global _producer
-    if _producer is not None:
-        return _producer
-
-    with _producer_lock:
-        if _producer is not None:
-            return _producer
-
-        secret_response = boto3.client("secretsmanager", region_name=AWS_REGION).get_secret_value(
-            SecretId=KAFKA_SECRET_ARN
-        )
-        credentials = json.loads(secret_response["SecretString"])
-        _producer = KafkaProducer(
-            bootstrap_servers=[server.strip() for server in KAFKA_BOOTSTRAP_SERVERS.split(",") if server.strip()],
-            security_protocol="SASL_SSL",
-            sasl_mechanism="SCRAM-SHA-512",
-            sasl_plain_username=credentials["username"],
-            sasl_plain_password=credentials["password"],
-            key_serializer=lambda key: key.encode("utf-8"),
-            value_serializer=lambda value: json.dumps(value, separators=(",", ":")).encode("utf-8"),
-            acks="all",
-            retries=10,
-            max_in_flight_requests_per_connection=1,
-            request_timeout_ms=20000,
-        )
-        logger.info("Kafka order event producer initialized")
-        return _producer
-
-
-def publish_pending_order_events():
-    producer = kafka_producer()
-    published = 0
-
-    # Keep the row locks until Kafka acknowledges each record and the published
-    # timestamps commit. SKIP LOCKED lets multiple order pods drain the outbox.
-    with conn() as db:
-        with db.cursor() as cur:
-            cur.execute("""
-                SELECT event_id::text, payload
-                FROM order_event_outbox
-                WHERE dispatchable=TRUE AND published_at IS NULL
-                ORDER BY created_at
-                LIMIT 25
-                FOR UPDATE SKIP LOCKED
-            """)
-            events = cur.fetchall()
-
-            for event in events:
-                producer.send(
-                    KAFKA_ORDERS_TOPIC,
-                    key=event["event_id"],
-                    value=event["payload"],
-                ).get(timeout=20)
-                cur.execute(
-                    "UPDATE order_event_outbox SET published_at=NOW() WHERE event_id=%s",
-                    (event["event_id"],),
-                )
-                published += 1
-
-    return published
-
-
-def order_event_dispatcher():
-    while not _dispatcher_stop.is_set():
-        try:
-            if publish_pending_order_events() == 0:
-                _dispatcher_stop.wait(2)
-        except Exception:
-            logger.exception("Could not publish pending order events; will retry")
-            _dispatcher_stop.wait(5)
-
-
-@app.on_event("startup")
-def start_order_event_dispatcher():
-    global _dispatcher_thread
-    if not KAFKA_ENABLED:
-        logger.info("Kafka is not configured; using the notification HTTP fallback")
-        return
-
-    _dispatcher_stop.clear()
-    _dispatcher_thread = threading.Thread(
-        target=order_event_dispatcher,
-        name="order-event-dispatcher",
-        daemon=True,
-    )
-    _dispatcher_thread.start()
-
-
-@app.on_event("shutdown")
-def stop_order_event_dispatcher():
-    global _producer
-    _dispatcher_stop.set()
-    if _dispatcher_thread is not None:
-        _dispatcher_thread.join(timeout=10)
-    if _producer is not None:
-        _producer.close(timeout=10)
-        _producer = None
 
 class OrderItemIn(BaseModel):
     product_id: int
@@ -299,7 +163,6 @@ async def create_order(payload: OrderCreate):
                 detail = "inventory reservation failed"
             raise HTTPException(409, detail)
 
-        event_id = str(uuid4()) if KAFKA_ENABLED else None
         try:
             with conn() as db:
                 with db.cursor() as cur:
@@ -313,26 +176,6 @@ async def create_order(payload: OrderCreate):
                         promotion_code, Json(enriched),
                     ))
                     row = cur.fetchone()
-                    if KAFKA_ENABLED:
-                        event_payload = {
-                            "event_id": event_id,
-                            "event_type": "order.created",
-                            "occurred_at": datetime.now(timezone.utc).isoformat(),
-                            "data": {
-                                "order_id": row["id"],
-                                "user_email": str(payload.user_email),
-                                "total": float(total),
-                            },
-                        }
-                        cur.execute("""
-                            INSERT INTO order_event_outbox(event_id,event_type,payload,dispatchable)
-                            VALUES(%s,%s,%s,%s)
-                        """, (
-                            event_id,
-                            "order.created",
-                            Json(event_payload),
-                            not bool(promotion_code),
-                        ))
         except Exception:
             await client.post(
                 f"{INVENTORY_URL}/inventory/release",
@@ -362,11 +205,6 @@ async def create_order(payload: OrderCreate):
                 try:
                     with conn() as db:
                         with db.cursor() as cur:
-                            if event_id:
-                                cur.execute(
-                                    "DELETE FROM order_event_outbox WHERE event_id=%s",
-                                    (event_id,),
-                                )
                             cur.execute("DELETE FROM orders WHERE id=%s", (row["id"],))
                 except Exception:
                     pass
@@ -381,27 +219,18 @@ async def create_order(payload: OrderCreate):
                     raise
                 raise HTTPException(502, detail) from e
 
-        if KAFKA_ENABLED:
-            if promotion_code:
-                with conn() as db:
-                    with db.cursor() as cur:
-                        cur.execute(
-                            "UPDATE order_event_outbox SET dispatchable=TRUE WHERE event_id=%s",
-                            (event_id,),
-                        )
-        else:
-            try:
-                await client.post(
-                    f"{NOTIFICATION_URL}/notifications",
-                    json={
-                        "recipient": str(payload.user_email),
-                        "type": "ORDER",
-                        "subject": f"Order #{row['id']} created",
-                        "message": f"Your order was created successfully. Total: ${float(total):.2f}",
-                    },
-                )
-            except Exception:
-                pass
+        try:
+            await client.post(
+                f"{NOTIFICATION_URL}/notifications",
+                json={
+                    "recipient": str(payload.user_email),
+                    "type": "ORDER",
+                    "subject": f"Order #{row['id']} created",
+                    "message": f"Your order was created successfully. Total: ${float(total):.2f}",
+                },
+            )
+        except Exception:
+            pass
 
     return serialize(row)
 

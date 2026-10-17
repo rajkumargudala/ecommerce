@@ -58,24 +58,6 @@ variable "cluster_version" {
   default     = "1.35"
 }
 
-variable "kafka_version" {
-  description = "Amazon MSK Kafka version."
-  type        = string
-  default     = "3.9.x"
-}
-
-variable "kafka_broker_instance_type" {
-  description = "MSK broker instance type for the development cluster."
-  type        = string
-  default     = "kafka.t3.small"
-}
-
-variable "kafka_broker_storage_gib" {
-  description = "EBS storage size per MSK broker in GiB."
-  type        = number
-  default     = 20
-}
-
 variable "node_instance_types" {
   description = "Managed node group instance types. "
   type        = list(string)

@@ -36,30 +36,6 @@ module "eks" {
   node_desired_size   = var.node_desired_size
 }
 
-module "kafka" {
-  source = "../../modules/kafka"
-
-  name                     = "${var.name}-kafka"
-  region                   = var.region
-  kafka_version            = var.kafka_version
-  broker_instance_type     = var.kafka_broker_instance_type
-  broker_storage_gib       = var.kafka_broker_storage_gib
-  broker_count             = length(module.vpc.private_subnet_ids)
-  vpc_id                   = module.vpc.vpc_id
-  private_subnet_ids       = module.vpc.private_subnet_ids
-  client_security_group_id = module.eks.node_security_group_id
-  oidc_provider_arn        = module.eks.oidc_provider_arn
-  oidc_provider            = module.eks.oidc_provider
-  namespace                = "default"
-  service_account_name     = "ecommerce-kafka-client"
-
-  tags = {
-    Environment = var.environment
-    Project     = "ecommerce-platform"
-    ManagedBy   = "terraform"
-  }
-}
-
 module "ecr" {
   source = "../../modules/ecr"
 

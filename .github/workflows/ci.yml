@@ -178,8 +178,6 @@ jobs:
             path: services/promotions-service
           - service: search-service
             path: services/search-service
-          - service: kafka-notification-worker
-            path: services/kafka-notification-worker
           - service: frontend
             path: frontend
 
@@ -325,27 +323,6 @@ jobs:
                   newline = "\n" if line.endswith("\n") else ""
                   lines[index] = f"  tag: {all_image_tags[current_section]}{newline}"
                   updated.add(current_section)
-
-          kafka_parent = False
-          kafka_worker = False
-          for index, line in enumerate(lines):
-              if re.match(r"^kafka:\s*(?:#.*)?(?:\r?\n)?$", line):
-                  kafka_parent = True
-                  kafka_worker = False
-                  continue
-              if re.match(r"^[A-Za-z][A-Za-z0-9_-]*:\s*(?:#.*)?(?:\r?\n)?$", line):
-                  kafka_parent = False
-                  kafka_worker = False
-                  continue
-              if kafka_parent and re.match(r"^  notificationWorker:\s*(?:#.*)?(?:\r?\n)?$", line):
-                  kafka_worker = True
-                  continue
-              if kafka_parent and re.match(r"^  [A-Za-z][A-Za-z0-9_-]*:", line):
-                  kafka_worker = False
-              if kafka_parent and kafka_worker and re.match(r"^    tag:\s*", line):
-                  newline = "\n" if line.endswith("\n") else ""
-                  lines[index] = f"    tag: kafka-notification-worker-{tag}{newline}"
-                  updated.add("kafka.notificationWorker")
 
           missing = sorted(set(image_tags) - updated)
           if missing:

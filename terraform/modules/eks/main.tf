@@ -50,7 +50,7 @@ module "eks" {
 
 # ---------------------------------------------------------------------------
 # EBS CSI driver — the managed add-on that lets PVCs provision EBS volumes
-# (Postgres/Kafka + the observability stack all need PVCs). Installed as a
+# (Postgres and the observability stack all need PVCs). Installed as a
 # standalone aws_eks_addon (rather than inside cluster_addons) so its IRSA role
 # can reference the cluster's OIDC provider without a dependency cycle.
 # The gp3 StorageClass itself is applied via GitOps (Terraform stays AWS-only).

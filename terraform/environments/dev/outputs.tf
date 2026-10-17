@@ -34,26 +34,6 @@ output "ecr_repository_url" {
   value = module.ecr.repository_url
 }
 
-output "kafka_cluster_arn" {
-  description = "Amazon MSK cluster ARN."
-  value       = module.kafka.cluster_arn
-}
-
-output "kafka_bootstrap_brokers_sasl_scram" {
-  description = "TLS bootstrap broker list for SASL/SCRAM clients."
-  value       = module.kafka.bootstrap_brokers_sasl_scram
-}
-
-output "kafka_scram_secret_arn" {
-  description = "Secrets Manager ARN containing the MSK SCRAM username and password."
-  value       = module.kafka.scram_secret_arn
-}
-
-output "kafka_secret_reader_role_arn" {
-  description = "IRSA role ARN used by Kafka client pods to read the SCRAM secret."
-  value       = module.kafka.secret_reader_role_arn
-}
-
 output "load_balancer_controller_irsa_role_arn" {
   value = module.eks.load_balancer_controller_irsa_role_arn
 }
