@@ -2,7 +2,7 @@
 
 This guide describes the GitHub Actions pipeline for the Lumaire eCommerce application and its GitOps promotion flow.
 
-The pipeline validates the Helm chart, waits for SonarQube quality gates, scans code and images with Trivy, builds all application images, and publishes uniquely tagged images to **Amazon ECR**. A push to `main` opens a pull request in the GitOps repository; Argo CD deploys after that pull request is reviewed and merged when its target revision points to the updated branch.
+The pipeline validates the Helm chart, waits for SonarQube quality gates, scans code and images with Trivy, builds all application images, and publishes uniquely tagged images to **Amazon ECR**. A push to either publishing branch opens a pull request to its matching branch in the GitOps repository. Each PR contains the image tags and the frontend Deployment and Service templates from the same source commit; it preserves GitOps-specific values and other workload templates. Argo CD deploys after the PR is reviewed and merged when its target revision points to that branch.
 
 ---
 
@@ -20,7 +20,7 @@ The pipeline validates the Helm chart, waits for SonarQube quality gates, scans 
 |   CI Pipeline       |  2. Enforce SonarQube quality gates and Trivy scans
 |                     |  3. Build, scan and create SBOMs for 14 images
 |                     |  4. Publish immutable run-specific tags on trusted branch pushes
-|                     |  5. Open a GitOps promotion PR for pushes to 'main'
+|                     |  5. Open a branch-matched GitOps promotion PR
 +----------+----------+
            |
            v
@@ -85,15 +85,15 @@ helm/ecommerce/
 
 ## 3. GitHub Actions CI/CD Pipeline (`.github/workflows/ci.yml`)
 
-The workflow runs chart validation, SonarQube analysis, Trivy filesystem scanning, and a 14-image build-and-scan matrix. The auth service runs Maven `verify`; other services currently have no unit or integration test suites wired into CI. Trivy blocks HIGH and CRITICAL vulnerability, secret, and configuration findings. Each image is scanned before publishing, and a CycloneDX SBOM is uploaded as a workflow artifact for 30 days.
+The workflow runs chart validation, SonarQube analysis, Trivy filesystem scanning, and a 14-image build-and-scan matrix. The auth service runs Maven `verify`; other services currently have no unit or integration test suites wired into CI. Trivy blocks HIGH and CRITICAL vulnerability, secret, and configuration findings. Each image is scanned before publishing, and a CycloneDX SBOM is uploaded as a workflow artifact for 30 days. The GitOps promotion job lints and renders its updated chart before opening a PR. Deployments use `maxSurge: 0` and `maxUnavailable: 1`, matching the successful recovery from pod-IP exhaustion; this avoids extra pods during rollout. A single-replica optional service may be briefly unavailable while it is replaced.
 
-ECR tags include the service name, commit SHA, workflow run ID, and retry attempt. ECR is configured to reject tag overwrites. Pull requests and manual runs build and scan without publishing. Pushes to `version-1.0.4` publish to ECR but do not create a GitOps promotion. Pushes to `main` publish and then open or update the single automation pull request in `rajkumargudala/ecommerce-gitops`.
+ECR tags include the service name, commit SHA, workflow run ID, and retry attempt. ECR is configured to reject tag overwrites. Pull requests and manual runs build and scan without publishing. Pushes to `version-1.0.4` publish to ECR and open or update a promotion PR targeting `gitops-release-1.0.4`. Pushes to `main` publish and open or update a separate promotion PR targeting GitOps `main`.
 
 SonarQube is configured with the display projects **Lumaire** and **Lumaire Payment Service**, using stable keys `ecommerce-platform` and `ecommerce-platform-payment-service`. Fork and Dependabot pull requests skip SonarQube because they do not receive repository secrets. Require the `CI gate` status check on protected source branches.
 
 ### GitHub Actions configuration
 
-Create the `production` environment with required reviewers and restrict it to the `main` branch. Configure the following repository variables and secrets:
+Create the `production` environment with required reviewers and restrict it to `main`. Create a `release` environment restricted to `version-1.0.4`; reviewers are optional there. Configure the following repository variables and secrets:
 
 | Name | Type | Value |
 |---|---|---|
@@ -138,7 +138,7 @@ helm list
 
 ## 5. Continuous Delivery with ArgoCD (GitOps Mode)
 
-ArgoCD continuously monitors the Git repository and ensures the cluster matches the declarative configuration in `helm/ecommerce/`.
+Argo CD continuously monitors the separate `rajkumargudala/ecommerce-gitops` repository and ensures the cluster matches its `helm/` chart and environment values. The checked-in Application tracks `gitops-release-1.0.4`.
 
 ### Step 1: Deploy ArgoCD on EKS (if not already installed)
 ```bash
@@ -150,7 +150,7 @@ helm repo add argo https://argoproj.github.io/argo-helm
 helm repo update
 helm upgrade --install argocd argo/argo-cd \
   --namespace argocd \
-  --set server.service.type=LoadBalancer
+  --set server.service.type=ClusterIP
 ```
 
 ### Step 2: Apply the ArgoCD Application
@@ -167,9 +167,12 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/rajkumargudala/ecommerce.git
-    targetRevision: HEAD
-    path: helm/ecommerce
+    repoURL: https://github.com/rajkumargudala/ecommerce-gitops.git
+    targetRevision: gitops-release-1.0.4
+    path: helm/
+    helm:
+      valueFiles:
+        - values.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: default
@@ -181,16 +184,17 @@ spec:
       - CreateNamespace=true
 ```
 
-Apply the application manifest:
+Apply the application manifest from this repository:
 ```bash
 kubectl apply -f ~/ecommerce/argocd/application.yaml
 ```
 
 ### Step 3: Access the ArgoCD Web UI
-Retrieve the external Load Balancer URL:
+Argo CD uses an internal `ClusterIP` service so Terraform teardown does not leave a Kubernetes load balancer waiting for cleanup. Forward its service port to localhost:
 ```bash
-kubectl get svc -n argocd argocd-server -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+kubectl port-forward -n argocd svc/argocd-server 8080:80
 ```
+Open `http://localhost:8080` while the port-forward is running.
 
 Retrieve the initial `admin` password:
 ```bash
@@ -204,6 +208,8 @@ Log in to the ArgoCD dashboard with:
 ---
 
 ## 6. Verification & Day-2 Operations
+
+After a source branch push, wait for the matching promotion pull request, review the chart and values diff, and merge it. `version-1.0.4` promotes to GitOps `gitops-release-1.0.4`; `main` promotes to GitOps `main`. The checked-in Application follows the release branch.
 
 ### Verify Sync Status in CLI
 ```bash

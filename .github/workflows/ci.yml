@@ -262,27 +262,35 @@ jobs:
         run: echo "All required CI checks passed."
 
   update-git-manifests:
-    name: Propose Image Tag Update in GitOps Repository
+    name: Propose Release Update in GitOps Repository
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     needs: ci-gate
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/version-1.0.4')
     environment:
-      name: production
+      name: ${{ github.ref_name == 'main' && 'production' || 'release' }}
+    env:
+      GITOPS_BASE_BRANCH: ${{ github.ref_name == 'main' && 'main' || 'gitops-release-1.0.4' }}
     steps:
+      - name: Checkout Source Repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
       - name: Checkout GitOps Repository
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           repository: rajkumargudala/ecommerce-gitops
-          ref: main
+          ref: ${{ env.GITOPS_BASE_BRANCH }}
           path: gitops
           token: ${{ secrets.GITOPS_TOKEN }}
           fetch-depth: 0
 
-      - name: Update Helm Values with New Image Tags
+      - name: Sync Frontend Chart Contract and Update Image Tags
         env:
           TAG: "${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}"
         run: |
+          cp helm/ecommerce/templates/frontend-deployment.yaml gitops/helm/templates/frontend-deployment.yaml
+          cp helm/ecommerce/templates/frontend-service.yaml gitops/helm/templates/frontend-service.yaml
+
           python3 - <<'PY'
           import os
           import re
@@ -331,16 +339,24 @@ jobs:
           values_path.write_text("".join(lines))
           PY
 
+      - name: Set up Helm
+        uses: azure/setup-helm@b9e51907a09c216f16ebe8536097933489208112 # v4.3.0
+
+      - name: Validate Promoted GitOps Chart
+        run: |
+          helm lint gitops/helm
+          helm template lumaire gitops/helm --namespace default > /dev/null
+
       - name: Create or Update GitOps Promotion Pull Request
         env:
-          GITOPS_BRANCH: automation/lumaire-image-promotion
           GH_TOKEN: ${{ secrets.GITOPS_TOKEN }}
         run: |
+          GITOPS_BRANCH="automation/lumaire-image-promotion-${GITHUB_REF_NAME}"
           git -C gitops config user.name "github-actions[bot]"
           git -C gitops config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git -C gitops switch --force-create "$GITOPS_BRANCH"
-          git -C gitops add helm/values.yaml
-          git -C gitops commit -m "ci(gitops): promote Lumaire images from ${GITHUB_SHA}"
+          git -C gitops add helm/templates/frontend-deployment.yaml helm/templates/frontend-service.yaml helm/values.yaml
+          git -C gitops commit -m "ci(gitops): promote ${GITHUB_REF_NAME} from ${GITHUB_SHA}"
           REMOTE_SHA=$(git -C gitops ls-remote origin "refs/heads/$GITOPS_BRANCH" | cut -f1)
           git -C gitops push \
             --force-with-lease="refs/heads/$GITOPS_BRANCH:$REMOTE_SHA" \
@@ -356,10 +372,10 @@ jobs:
             if [[ "$OPEN_PR_COUNT" == "0" ]]; then
               gh pr create \
                 --repo rajkumargudala/ecommerce-gitops \
-                --base main \
+                --base "$GITOPS_BASE_BRANCH" \
                 --head "$GITOPS_BRANCH" \
-                --title "ci(gitops): promote Lumaire images from ${GITHUB_SHA}" \
-                --body "Promote image tags produced by source commit ${GITHUB_SHA}. Review the GitOps diff and merge to deploy."
+                --title "ci(gitops): promote ${GITHUB_REF_NAME} from ${GITHUB_SHA}" \
+                --body "Promote the frontend chart contract and image tags produced by source branch ${GITHUB_REF_NAME} at commit ${GITHUB_SHA} to ${GITOPS_BASE_BRANCH}. Review and merge to deploy."
             else
               echo "Updated the existing GitOps promotion pull request."
             fi

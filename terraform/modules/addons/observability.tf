@@ -337,6 +337,10 @@ resource "helm_release" "kube_prometheus_stack" {
       grafana = {
         enabled       = var.enable_grafana
         adminPassword = var.grafana_admin_password
+        # Grafana is accessed with kubectl port-forward; no standalone ELB is needed.
+        service = {
+          type = "ClusterIP"
+        }
         persistence = {
           enabled          = true
           storageClassName = var.observability_storage_class

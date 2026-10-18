@@ -82,9 +82,11 @@ resource "helm_release" "argocd" {
   namespace        = "argocd"
   create_namespace = true
 
+  # Keep the UI cluster-internal; use kubectl port-forward instead of creating
+  # an external load balancer that can block cluster teardown during cleanup.
   set {
     name  = "server.service.type"
-    value = "LoadBalancer"
+    value = "ClusterIP"
   }
 
   set {

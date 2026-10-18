@@ -11,8 +11,8 @@ spec:
   strategy:
     type: RollingUpdate
     rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
+      maxSurge: 0
+      maxUnavailable: 1
   selector:
     matchLabels:
       app: frontend
@@ -22,11 +22,23 @@ spec:
         app: frontend
     spec:
       securityContext:
-        {{- include "ecommerce.podSecurityContext" (dict "user" 101 "group" 101) | nindent 8 }}
+        runAsNonRoot: true
+        runAsUser: 101
+        runAsGroup: 101
+        fsGroup: 101
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: frontend
           securityContext:
-            {{- include "ecommerce.containerSecurityContext" (dict "user" 101 "group" 101) | nindent 12 }}
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 101
+            runAsGroup: 101
+            capabilities:
+              drop:
+                - ALL
           image: "{{ .Values.global.imageRegistry }}/{{ .Values.global.imageRepository }}:{{ .Values.frontend.tag }}"
           imagePullPolicy: {{ .Values.global.imagePullPolicy }}
           volumeMounts:

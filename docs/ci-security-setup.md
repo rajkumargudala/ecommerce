@@ -76,8 +76,13 @@ Add these Actions variables and secrets:
 | `SONAR_TOKEN` | Secret | Token that can analyze both configured SonarQube projects |
 | `GITOPS_TOKEN` | Secret | Fine-grained token for `rajkumargudala/ecommerce-gitops` with Contents read/write and Pull requests read/write |
 
-Create a GitHub Actions environment named `production`, restrict its deployment branches to `main`, and require one or more reviewers. The workflow waits on that environment before it opens a GitOps promotion pull request.
+Create two GitHub Actions environments for the promotion job:
+
+- `production`: restrict deployment branches to `main` and require one or more reviewers.
+- `release`: restrict deployment branches to `version-1.0.4`. Add reviewers if release promotions should wait for approval.
+
+The workflow uses `production` for pushes to `main` and `release` for pushes to `version-1.0.4`. It opens the corresponding GitOps pull request only after image publishing and all CI gates succeed.
 
 Protect `main` and `version-1.0.4` in the source repository. Require pull requests and the `CI gate` status check before merging. The `CI gate` includes Helm validation, SonarQube when secrets are available, Trivy scans, and every image build and scan. Fork and Dependabot pull requests cannot receive `SONAR_TOKEN`, so their SonarQube analysis is skipped.
 
-Protect `main` in the GitOps repository and require its normal review and deployment checks. CI maintains one automation branch and pull request for image promotion; it does not push image updates directly to the deployment branch.
+Protect `main` and `gitops-release-1.0.4` in the GitOps repository and require their normal review and deployment checks. CI maintains a separate automation branch and pull request for each source branch. Each pull request updates image tags and copies the frontend Deployment and Service templates from the matching source commit, while preserving the GitOps `values.yaml` and its other workload-specific templates. CI does not push these changes directly to deployment branches.

@@ -9,6 +9,7 @@ Lumaire is an AWS EKS based eCommerce application composed of a React storefront
 - [Repository layout](#repository-layout)
 - [Requirements](#requirements)
 - [Provision AWS infrastructure](#provision-aws-infrastructure)
+- [Destroy AWS infrastructure](#destroy-aws-infrastructure)
 - [Deploy the application](#deploy-the-application)
 - [Build and release workflow](#build-and-release-workflow)
 - [CI security setup](#ci-security-setup)
@@ -113,11 +114,31 @@ The development Terraform environment provisions the VPC and subnets, EKS cluste
    kubectl get nodes
    ```
 
+## Destroy AWS infrastructure
+
+Remove the Argo CD Application while the cluster and AWS Load Balancer Controller are still running. Its resource finalizer deletes the GitOps-managed workloads and gives the controller time to remove the application ALB:
+
+```bash
+kubectl delete application ecommerce-platform -n argocd --wait=true
+kubectl get ingress -A
+```
+
+Wait for the application's Ingress to disappear before destroying the cluster. Then review the destroy plan and apply it:
+
+```bash
+terraform -chdir=terraform/environments/dev init
+terraform -chdir=terraform/environments/dev plan -destroy -out=/tmp/ecommerce-destroy.tfplan
+terraform -chdir=terraform/environments/dev show /tmp/ecommerce-destroy.tfplan
+terraform -chdir=terraform/environments/dev apply /tmp/ecommerce-destroy.tfplan
+```
+
+Terraform removes the resources recorded in state, including the EKS cluster, ECR repository, networking, and add-ons. The S3 backend bucket is created separately and remains so Terraform can retain its state and lock data. KMS key deletion may remain pending for its configured waiting period. Reapply the infrastructure and confirm the ECR repository exists before pushing to a publishing branch; image publication cannot succeed after ECR has been destroyed.
+
 ## Deploy the application
 
 ### Prepare image tags
 
-The chart reads image tags from `helm/ecommerce/values.yaml`. CI publishes images to the configured ECR repository with immutable tags in the form `<service>-<commit-sha>-<run-id>-<attempt>`. Before a manual deployment, set the chart values to tags that exist in your registry. The defaults checked into this branch are not automatically changed by a `version-1.0.4` build.
+The chart reads image tags from `helm/ecommerce/values.yaml`. CI publishes images to the configured ECR repository with immutable tags in the form `<service>-<commit-sha>-<run-id>-<attempt>`. Before a manual deployment, set the chart values to tags that exist in your registry. CI promotes tags to the GitOps repository; it does not rewrite this source repository's default values.
 
 ### Deploy with Helm
 
@@ -134,14 +155,14 @@ For a production or shared cluster, provide an environment-specific values file 
 
 ### Deploy with Argo CD
 
-The manifest at [`argocd/application.yaml`](argocd/application.yaml) points to the separate `rajkumargudala/ecommerce-gitops` repository, not this repository's chart. Its checked-in target revision is `gitops-release-1.0.4`, and its chart path is `helm/`. Apply it only after Argo CD is installed and that GitOps branch contains the desired chart and values:
+The manifest at [`argocd/application.yaml`](argocd/application.yaml) points to the separate `rajkumargudala/ecommerce-gitops` repository, not this repository's chart. It tracks the `gitops-release-1.0.4` branch at `helm/`; that branch contains the v1.0.4 image tags and deployment chart. Argo CD automatically syncs changes on the tracked branch:
 
 ```bash
 kubectl apply -f argocd/application.yaml
 kubectl get applications -n argocd
 ```
 
-To deploy v1.0.4 through GitOps, promote the v1.0.4 image tags and compatible chart/values into the GitOps branch Argo CD should track, then set or update `targetRevision` to that branch. See [the CI/CD and Argo CD guide](guides/cicd-helm-argocd.md).
+Pushes to `version-1.0.4` now open a promotion PR to `gitops-release-1.0.4`; pushes to `main` open one to GitOps `main`. Each PR carries the source frontend Deployment and Service templates together with image tag updates, while preserving GitOps values and its other workload-specific templates. This keeps the frontend compatible with its non-root image (UID 101, port 8080, writable `/tmp`, `/var/cache/nginx`, and `/var/run`, and Service port 80 to target port 8080). See [the CI/CD and Argo CD guide](guides/cicd-helm-argocd.md).
 
 ## Build and release workflow
 
@@ -154,15 +175,15 @@ The auth service's Maven `verify` phase runs any available Java tests. The repos
 The workflow behavior differs by branch:
 
 - Pull requests targeting `main` or `version-1.0.4` validate the chart, run available SonarQube and Trivy gates, and build and scan images without pushing them. Require the `CI gate` status check in GitHub branch protection.
-- Pushes to `version-1.0.4` publish images to ECR. They do **not** update the GitOps repository or deploy the release automatically.
-- Pushes to `main` publish images and open a pull request with the image tag updates in `rajkumargudala/ecommerce-gitops`. The production environment must be configured with required reviewers. After the GitOps pull request passes its checks and is merged, Argo CD deploys it if its target revision tracks `main`.
+- Pushes to `version-1.0.4` publish images and open or update a promotion PR targeting `gitops-release-1.0.4` in `rajkumargudala/ecommerce-gitops`. The `release` environment must allow this source branch.
+- Pushes to `main` publish images and open or update a promotion PR targeting GitOps `main`. The `production` environment must be configured with required reviewers. After the PR is merged, Argo CD deploys it when its target revision points to that branch.
 - Manual workflow runs build and scan images but do not publish them.
 
-The checked-in Argo CD Application follows `gitops-release-1.0.4`, while CI proposes image updates against the GitOps repository's `main` branch. Argo CD deploys those changes only when its target revision is aligned with the branch receiving the merged promotion. See [the CI/CD and Argo CD guide](guides/cicd-helm-argocd.md).
+The checked-in Argo CD Application follows `gitops-release-1.0.4`, so merging that branch's promotion PR updates the deployed release. All chart Deployments use `maxSurge: 0` and `maxUnavailable: 1`, matching the successful recovery from pod-IP exhaustion during rollout. This avoids creating extra pods; single-replica optional services may be briefly unavailable during an update. See [the CI/CD and Argo CD guide](guides/cicd-helm-argocd.md).
 
 ## CI security setup
 
-Configure GitHub Actions OIDC and the `production` environment before enabling ECR publishing. Follow [the CI security setup guide](docs/ci-security-setup.md) for the AWS role trust policy, least-privilege ECR permissions, GitHub variables and secrets, and required environment protections. Remove any old long-lived AWS access-key secrets after OIDC publishing succeeds.
+Configure GitHub Actions OIDC and the `production` and `release` environments before enabling ECR publishing and GitOps promotion. Follow [the CI security setup guide](docs/ci-security-setup.md) for the AWS role trust policy, least-privilege ECR permissions, GitHub variables and secrets, and environment protections. Remove any old long-lived AWS access-key secrets after OIDC publishing succeeds.
 
 ## Verify the deployment
 
