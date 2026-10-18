@@ -1,5 +1,5 @@
 # Multi-stage build for Go Catalog Service
-FROM golang:1.22-alpine AS builder
+FROM golang:1.26-alpine AS builder
 
 WORKDIR /app
 
@@ -12,12 +12,13 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o catalog-service .
 
 # Runtime stage
-FROM alpine:3.20
+FROM alpine:3.24
 
 WORKDIR /app
 
 # Install CA certificates and create non-root user
-RUN apk --no-cache add ca-certificates \
+RUN apk upgrade --no-cache \
+    && apk add --no-cache ca-certificates \
     && addgroup -S appgroup && adduser -S appuser -G appgroup
 USER appuser
 

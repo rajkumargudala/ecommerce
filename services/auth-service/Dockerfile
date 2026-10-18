@@ -14,6 +14,8 @@ RUN mvn clean package -DskipTests -B
 # Runtime stage
 FROM eclipse-temurin:21-jre-alpine
 
+RUN apk upgrade --no-cache
+
 WORKDIR /app
 
 # Run as a non-root user

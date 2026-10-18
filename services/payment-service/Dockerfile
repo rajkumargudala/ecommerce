@@ -12,9 +12,11 @@ COPY . .
 RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false
 
 # Runtime stage
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS runtime
 
 WORKDIR /app
+
+RUN apk upgrade --no-cache
 
 # Run as non-root user built into .NET 8 images
 USER $APP_UID
