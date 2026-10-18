@@ -134,7 +134,7 @@ For a production or shared cluster, provide an environment-specific values file 
 
 ### Deploy with Argo CD
 
-The manifest at [`argocd/application.yaml`](argocd/application.yaml) points to the separate `rajkumargudala/ecommerce-gitops` repository, not this repository's chart. Its checked-in target revision is currently `gitops-release-1.0.3`, and its chart path is `helm/`. Apply it only after Argo CD is installed and that GitOps branch contains the desired chart and values:
+The manifest at [`argocd/application.yaml`](argocd/application.yaml) points to the separate `rajkumargudala/ecommerce-gitops` repository, not this repository's chart. Its checked-in target revision is `gitops-release-1.0.4`, and its chart path is `helm/`. Apply it only after Argo CD is installed and that GitOps branch contains the desired chart and values:
 
 ```bash
 kubectl apply -f argocd/application.yaml
@@ -158,7 +158,7 @@ The workflow behavior differs by branch:
 - Pushes to `main` publish images and open a pull request with the image tag updates in `rajkumargudala/ecommerce-gitops`. The production environment must be configured with required reviewers. After the GitOps pull request passes its checks and is merged, Argo CD deploys it if its target revision tracks `main`.
 - Manual workflow runs build and scan images but do not publish them.
 
-The checked-in Argo CD Application follows `gitops-release-1.0.3`, while CI proposes image updates against the GitOps repository's `main` branch. Argo CD deploys those changes only when its target revision is aligned with the branch receiving the merged promotion. See [the CI/CD and Argo CD guide](guides/cicd-helm-argocd.md).
+The checked-in Argo CD Application follows `gitops-release-1.0.4`, while CI proposes image updates against the GitOps repository's `main` branch. Argo CD deploys those changes only when its target revision is aligned with the branch receiving the merged promotion. See [the CI/CD and Argo CD guide](guides/cicd-helm-argocd.md).
 
 ## CI security setup
 
