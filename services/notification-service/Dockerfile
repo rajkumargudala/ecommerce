@@ -10,7 +10,11 @@ RUN apk upgrade --no-cache \
 
 # Install gems
 COPY Gemfile Gemfile.lock ./
-RUN bundle install && apk del .build-deps
+RUN bundle install \
+    && apk del .build-deps \
+    && rm -rf \
+        /usr/local/lib/ruby/gems/3.3.0/specifications/default/resolv-0.3.1.gemspec \
+        /usr/local/lib/ruby/gems/3.3.0/gems/resolv-0.3.1
 
 # Copy application source
 COPY . .
