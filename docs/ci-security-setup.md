@@ -9,7 +9,7 @@ In AWS IAM, create the GitHub identity provider with:
 - Provider URL: `https://token.actions.githubusercontent.com`
 - Audience: `sts.amazonaws.com`
 
-Create a role for GitHub Actions with a trust policy restricted to this repository and the two publishing branches. Replace the account ID in the federated provider ARN.
+Create the `github-actions-ecommerce-ecr-publish` role with a trust policy restricted to this repository and the two publishing branches. This repository uses GitHub's immutable OIDC subject format, which includes its owner and repository IDs. Replace the account ID in the federated provider ARN.
 
 ```json
 {
@@ -25,8 +25,8 @@ Create a role for GitHub Actions with a trust policy restricted to this reposito
         "StringEquals": {
           "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
           "token.actions.githubusercontent.com:sub": [
-            "repo:rajkumargudala/ecommerce:ref:refs/heads/main",
-            "repo:rajkumargudala/ecommerce:ref:refs/heads/version-1.0.4"
+            "repo:rajkumargudala@191754930/ecommerce@1414337297:ref:refs/heads/main",
+            "repo:rajkumargudala@191754930/ecommerce@1414337297:ref:refs/heads/version-1.0.4"
           ]
         }
       }
@@ -35,7 +35,7 @@ Create a role for GitHub Actions with a trust policy restricted to this reposito
 }
 ```
 
-If this repository uses GitHub's immutable OIDC subject claims, use the repository's actual `sub` values from the GitHub OIDC settings in place of the two subject strings above. Keep the audience and branch restrictions.
+Keep the `aud` condition and both branch restrictions when configuring the role.
 
 Attach a role policy that allows ECR login and push only to the `ecommerce-platform` repository. Replace `<AWS_ACCOUNT_ID>` as needed.
 
