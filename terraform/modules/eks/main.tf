@@ -9,7 +9,8 @@ module "eks" {
   cluster_name    = var.cluster_name
   cluster_version = var.cluster_version
 
-  cluster_endpoint_public_access           = true
+  cluster_endpoint_public_access           = false
+  cluster_endpoint_private_access          = true
   enable_cluster_creator_admin_permissions = true
   authentication_mode                      = "API_AND_CONFIG_MAP"
   enable_irsa                              = true
@@ -23,6 +24,36 @@ module "eks" {
 
   eks_managed_node_group_defaults = {
     ami_type = "AL2023_x86_64_STANDARD"
+  }
+
+  # Replace the module's unrestricted default egress with VPC-only traffic
+  # plus HTTPS to the S3 gateway endpoint used for ECR image layers.
+  node_security_group_enable_recommended_rules = false
+  node_security_group_additional_rules = {
+    ingress_nodes_and_pods = {
+      description = "Node and pod traffic within the VPC"
+      protocol    = "-1"
+      from_port   = 0
+      to_port     = 0
+      type        = "ingress"
+      self        = true
+    }
+    egress_vpc = {
+      description = "Cluster and pod traffic within the VPC"
+      protocol    = "-1"
+      from_port   = 0
+      to_port     = 0
+      type        = "egress"
+      cidr_blocks = [var.vpc_cidr]
+    }
+    egress_s3 = {
+      description     = "HTTPS to S3 for ECR image layers"
+      protocol        = "tcp"
+      from_port       = 443
+      to_port         = 443
+      type            = "egress"
+      prefix_list_ids = [var.s3_prefix_list_id]
+    }
   }
 
   eks_managed_node_groups = {

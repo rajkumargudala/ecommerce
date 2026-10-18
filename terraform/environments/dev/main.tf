@@ -5,6 +5,7 @@ data "aws_caller_identity" "current" {}
 module "vpc" {
   source = "../../modules/vpc"
 
+  region             = var.region
   name               = var.name
   cidr               = var.vpc_cidr
   azs                = var.azs
@@ -23,10 +24,14 @@ module "iam" {
 module "eks" {
   source = "../../modules/eks"
 
+  depends_on = [module.vpc]
+
   cluster_name       = var.cluster_name
   cluster_version    = var.cluster_version
   vpc_id             = module.vpc.vpc_id
+  vpc_cidr           = var.vpc_cidr
   private_subnet_ids = module.vpc.private_subnet_ids
+  s3_prefix_list_id  = module.vpc.s3_prefix_list_id
   cluster_role_arn   = module.iam.cluster_role_arn
   node_role_arn      = module.iam.node_role_arn
 

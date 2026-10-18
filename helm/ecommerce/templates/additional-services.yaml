@@ -25,10 +25,17 @@ spec:
       labels:
         app: {{ $svc }}-service
     spec:
+      securityContext:
+        {{- include "ecommerce.podSecurityContext" (dict "user" 1000 "group" 1000) | nindent 8 }}
       containers:
         - name: {{ $svc }}-service
+          securityContext:
+            {{- include "ecommerce.containerSecurityContext" (dict "user" 1000 "group" 1000) | nindent 12 }}
           image: "{{ $.Values.global.imageRegistry }}/{{ $.Values.global.imageRepository }}:{{ $cfg.tag }}"
           imagePullPolicy: {{ $.Values.global.imagePullPolicy }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           ports:
             - containerPort: {{ $cfg.service.port }}
               name: http
@@ -61,6 +68,9 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 15
             timeoutSeconds: 3
+      volumes:
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service

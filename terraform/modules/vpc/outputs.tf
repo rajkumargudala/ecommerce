@@ -18,6 +18,11 @@ output "private_subnet_ids" {
   value       = aws_subnet.private[*].id
 }
 
+output "s3_prefix_list_id" {
+  description = "AWS-managed S3 prefix list ID for restricted worker-node egress."
+  value       = aws_vpc_endpoint.s3.prefix_list_id
+}
+
 output "nat_gateway_ids" {
   description = "IDs of the NAT gateways."
   value       = aws_nat_gateway.this[*].id

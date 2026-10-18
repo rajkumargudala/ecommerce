@@ -21,27 +21,45 @@ spec:
       labels:
         app: frontend
     spec:
+      securityContext:
+        {{- include "ecommerce.podSecurityContext" (dict "user" 101 "group" 101) | nindent 8 }}
       containers:
         - name: frontend
+          securityContext:
+            {{- include "ecommerce.containerSecurityContext" (dict "user" 101 "group" 101) | nindent 12 }}
           image: "{{ .Values.global.imageRegistry }}/{{ .Values.global.imageRepository }}:{{ .Values.frontend.tag }}"
           imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: nginx-cache
+              mountPath: /var/cache/nginx
+            - name: nginx-run
+              mountPath: /var/run
           ports:
-            - containerPort: {{ .Values.frontend.service.port }}
+            - containerPort: 8080
               name: http
           resources:
             {{- toYaml .Values.frontend.resources | nindent 12 }}
           readinessProbe:
             httpGet:
               path: /
-              port: {{ .Values.frontend.service.port }}
+              port: 8080
             initialDelaySeconds: 5
             periodSeconds: 10
             timeoutSeconds: 3
           livenessProbe:
             httpGet:
               path: /
-              port: {{ .Values.frontend.service.port }}
+              port: 8080
             initialDelaySeconds: 10
             periodSeconds: 15
             timeoutSeconds: 3
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: nginx-cache
+          emptyDir: {}
+        - name: nginx-run
+          emptyDir: {}
 {{- end }}

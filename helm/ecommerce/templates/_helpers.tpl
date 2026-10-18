@@ -48,3 +48,23 @@ Create chart name and version as used by the chart label.
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
+{{- define "ecommerce.podSecurityContext" -}}
+runAsNonRoot: true
+runAsUser: {{ .user }}
+runAsGroup: {{ .group }}
+fsGroup: {{ .group }}
+seccompProfile:
+  type: RuntimeDefault
+{{- end }}
+
+{{- define "ecommerce.containerSecurityContext" -}}
+allowPrivilegeEscalation: false
+readOnlyRootFilesystem: true
+runAsNonRoot: true
+runAsUser: {{ .user }}
+runAsGroup: {{ .group }}
+capabilities:
+  drop:
+    - ALL
+{{- end }}
+

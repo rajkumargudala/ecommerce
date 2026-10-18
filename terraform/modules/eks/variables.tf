@@ -14,6 +14,16 @@ variable "vpc_id" {
   type        = string
 }
 
+variable "vpc_cidr" {
+  description = "VPC CIDR allowed for node and pod traffic."
+  type        = string
+}
+
+variable "s3_prefix_list_id" {
+  description = "AWS-managed S3 prefix list ID used by the VPC gateway endpoint."
+  type        = string
+}
+
 variable "private_subnet_ids" {
   description = "Private subnet IDs for the cluster and node groups."
   type        = list(string)

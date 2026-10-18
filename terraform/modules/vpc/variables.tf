@@ -3,6 +3,11 @@ variable "name" {
   type        = string
 }
 
+variable "region" {
+  description = "AWS region used for regional VPC endpoints."
+  type        = string
+}
+
 variable "cidr" {
   description = "CIDR block for the VPC."
   type        = string
