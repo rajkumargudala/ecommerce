@@ -85,6 +85,12 @@ variable "ecr_repository_name" {
   default     = "ecommerce-platform"
 }
 
+variable "ecr_ci_account_id" {
+  description = "AWS account ID used by GitHub Actions to publish images to this ECR repository."
+  type        = string
+  default     = "877013879278"
+}
+
 variable "domain_name" {
   description = "Apex domain hosted in Route 53."
   type        = string

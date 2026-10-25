@@ -10,7 +10,7 @@ This Terraform configuration provisions the AWS foundation and cluster add-ons f
 | Network | A VPC, public and private subnets across three availability zones, internet gateway, route tables, one NAT gateway, and its Elastic IP. |
 | IAM | EKS cluster and worker-node roles and policies, plus workload roles for the EBS CSI driver and AWS Load Balancer Controller. EKS Pod Identity is used for these workloads. |
 | Kubernetes | An EKS cluster and managed node group, CoreDNS, kube-proxy, VPC CNI, the Pod Identity agent, the EBS CSI driver, and the `gp3` StorageClass. |
-| Container images | The `ecommerce-platform` ECR repository with image scanning and a lifecycle policy that keeps the most recent 40 images. |
+| Container images | The `ecommerce-platform` ECR repository in account `623174465382`, region `ap-southeast-2`, with image scanning, a lifecycle policy, and cross-account publishing access for the CI account. |
 | TLS and DNS | An ACM certificate for `learnwithmedevops.online` and `*.learnwithmedevops.online`, with DNS validation records in the existing Route 53 hosted zone. |
 | Cluster add-ons | AWS Load Balancer Controller and Argo CD. Argo CD's server Service is configured as a Kubernetes `LoadBalancer`. |
 | Observability | Prometheus, Grafana, Loki, Promtail, Tempo, and the OpenTelemetry Collector in the `monitoring` namespace. Persistent volumes use the `gp3` StorageClass. |
@@ -29,6 +29,8 @@ terraform apply
 ```
 
 The configured S3 backend stores shared state. Use this environment directory for Terraform commands so Terraform reads the correct backend and state.
+
+The GitHub Actions CI role is in AWS account `877013879278` by default (`ecr_ci_account_id`). Terraform grants that account push access to this ECR repository. Keep this value aligned with `ECR_CI_ACCOUNT_ID` in `.github/workflows/ci.yml`. CI publishes to `623174465382.dkr.ecr.ap-southeast-2.amazonaws.com/ecommerce-platform`; the GitOps promotion workflow also writes that registry into its Helm values so Argo CD keeps deploying from the same repository.
 
 ## Connect to the EKS cluster
 

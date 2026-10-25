@@ -1,6 +1,6 @@
 # Production Helm values for Polyglot eCommerce Platform on AWS EKS
 global:
-  imageRegistry: 877013879278.dkr.ecr.us-east-1.amazonaws.com
+  imageRegistry: 623174465382.dkr.ecr.ap-southeast-2.amazonaws.com
   imageRepository: ecommerce-platform
   imagePullPolicy: IfNotPresent
 

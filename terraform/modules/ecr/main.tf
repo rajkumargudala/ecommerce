@@ -21,6 +21,36 @@ resource "aws_ecr_repository" "this" {
   tags = var.tags
 }
 
+# CI currently runs in a separate AWS account. ECR needs this resource policy
+# as well as the CI role's identity policy for cross-account image publishing.
+data "aws_iam_policy_document" "ci_access" {
+  statement {
+    sid    = "AllowCiAccountToPublishImages"
+    effect = "Allow"
+
+    principals {
+      type        = "AWS"
+      identifiers = [var.ci_account_id]
+    }
+
+    actions = [
+      "ecr:BatchCheckLayerAvailability",
+      "ecr:BatchGetImage",
+      "ecr:CompleteLayerUpload",
+      "ecr:GetDownloadUrlForLayer",
+      "ecr:InitiateLayerUpload",
+      "ecr:PutImage",
+      "ecr:UploadLayerPart",
+    ]
+
+  }
+}
+
+resource "aws_ecr_repository_policy" "ci_access" {
+  repository = aws_ecr_repository.this.name
+  policy     = data.aws_iam_policy_document.ci_access.json
+}
+
 # Retain only the most recent N images to control storage cost.
 resource "aws_ecr_lifecycle_policy" "this" {
   repository = aws_ecr_repository.this.name

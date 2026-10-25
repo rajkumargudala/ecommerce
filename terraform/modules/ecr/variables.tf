@@ -9,6 +9,11 @@ variable "max_image_count" {
   default     = 280
 }
 
+variable "ci_account_id" {
+  description = "AWS account ID containing the CI role that publishes images to this repository."
+  type        = string
+}
+
 variable "tags" {
   description = "Common tags."
   type        = map(string)

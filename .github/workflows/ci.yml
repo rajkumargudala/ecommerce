@@ -15,7 +15,10 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
-  AWS_REGION: us-east-1
+  AWS_REGION: ap-southeast-2
+  ECR_CI_ACCOUNT_ID: "877013879278"
+  ECR_TARGET_ACCOUNT_ID: "623174465382"
+  ECR_TARGET_REGISTRY: 623174465382.dkr.ecr.ap-southeast-2.amazonaws.com
   ECR_REPOSITORY: ecommerce-platform
 
 jobs:
@@ -201,10 +204,25 @@ jobs:
           role-session-name: LumaireCI-${{ github.run_id }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Log in to Amazon ECR
+      - name: Validate image publishing account and destination
         if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/version-1.0.4')
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
+        run: |
+          caller_account="$(aws sts get-caller-identity --query Account --output text)"
+          if [[ "$caller_account" != "$ECR_CI_ACCOUNT_ID" ]]; then
+            echo "::error::AWS_ROLE_ARN resolved to account $caller_account; expected $ECR_CI_ACCOUNT_ID (Terraform ecr_ci_account_id)."
+            exit 1
+          fi
+          expected_registry="${ECR_TARGET_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+          if [[ "$ECR_TARGET_REGISTRY" != "$expected_registry" ]]; then
+            echo "::error::ECR_TARGET_REGISTRY ($ECR_TARGET_REGISTRY) does not match the configured AWS account and region ($expected_registry)."
+            exit 1
+          fi
+
+      - name: Log in to target Amazon ECR repository
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/version-1.0.4')
+        run: |
+          aws ecr get-login-password --region "$AWS_REGION" \
+            | docker login --username AWS --password-stdin "$ECR_TARGET_REGISTRY"
 
       - name: Build Docker Image
         uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
@@ -245,7 +263,7 @@ jobs:
         env:
           LOCAL_IMAGE: local/${{ matrix.service }}:${{ github.sha }}
           SERVICE: ${{ matrix.service }}
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REGISTRY: ${{ env.ECR_TARGET_REGISTRY }}
         run: |
           IMAGE_REPOSITORY="$ECR_REGISTRY/$ECR_REPOSITORY"
           IMAGE_TAG="$SERVICE-$GITHUB_SHA-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
@@ -287,6 +305,7 @@ jobs:
       - name: Sync Frontend Chart Contract and Update Image Tags
         env:
           TAG: "${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}"
+          ECR_TARGET_REGISTRY: ${{ env.ECR_TARGET_REGISTRY }}
         run: |
           cp helm/ecommerce/templates/frontend-deployment.yaml gitops/helm/templates/frontend-deployment.yaml
           cp helm/ecommerce/templates/frontend-service.yaml gitops/helm/templates/frontend-service.yaml
@@ -301,6 +320,7 @@ jobs:
               raise SystemExit(f"Expected GitOps values file at {values_path}")
 
           tag = os.environ["TAG"]
+          image_registry = os.environ["ECR_TARGET_REGISTRY"]
           image_tags = {
               "auth": f"auth-service-{tag}",
               "catalog": f"catalog-service-{tag}",
@@ -323,10 +343,15 @@ jobs:
           lines = values_path.read_text().splitlines(keepends=True)
           current_section = None
           updated = set()
+          registry_updated = False
           for index, line in enumerate(lines):
               section_match = re.match(r"^([A-Za-z][A-Za-z0-9_-]*):\s*(?:#.*)?(?:\r?\n)?$", line)
               if section_match:
                   current_section = section_match.group(1)
+              elif current_section == "global" and re.match(r"^  imageRegistry:\s*", line):
+                  newline = "\n" if line.endswith("\n") else ""
+                  lines[index] = f"  imageRegistry: {image_registry}{newline}"
+                  registry_updated = True
               elif current_section in all_image_tags and re.match(r"^  tag:\s*", line):
                   newline = "\n" if line.endswith("\n") else ""
                   lines[index] = f"  tag: {all_image_tags[current_section]}{newline}"
@@ -335,6 +360,8 @@ jobs:
           missing = sorted(set(image_tags) - updated)
           if missing:
               raise SystemExit("Missing top-level tag entries in GitOps values.yaml: " + ", ".join(missing))
+          if not registry_updated:
+              raise SystemExit("Missing global.imageRegistry entry in GitOps values.yaml")
 
           values_path.write_text("".join(lines))
           PY
