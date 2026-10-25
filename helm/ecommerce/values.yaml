@@ -329,7 +329,7 @@ frontend:
       alb.ingress.kubernetes.io/target-type: ip
       alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80},{"HTTPS":443}]'
       alb.ingress.kubernetes.io/healthcheck-path: /
-      alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:877013879278:certificate/21384cfe-329b-42af-9c59-b4e8320bee00
+      alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-southeast-2:623174465382:certificate/b4e7ea20-7476-46a8-baea-45c71df8c68c
   resources:
     requests:
       cpu: 100m
