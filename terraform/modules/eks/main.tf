@@ -1,6 +1,6 @@
-# EKS cluster via the community module. Nodes run in the private subnets; IRSA is
-# enabled so pods (e.g. document-service for S3) can assume IAM roles. The
-# control-plane and node IAM roles come from the iam module (Phase 8).
+# EKS cluster via the community module. Pod Identity is used for AWS workload
+# credentials because this account's Organizations policy denies OIDC provider
+# creation. The control-plane and node IAM roles come from the iam module.
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
@@ -13,7 +13,7 @@ module "eks" {
   cluster_endpoint_private_access          = true
   enable_cluster_creator_admin_permissions = true
   authentication_mode                      = "API_AND_CONFIG_MAP"
-  enable_irsa                              = true
+  enable_irsa                              = false
 
   vpc_id     = var.vpc_id
   subnet_ids = var.private_subnet_ids
@@ -71,41 +71,47 @@ module "eks" {
   }
 
   cluster_addons = {
-    coredns    = {}
-    kube-proxy = {}
-    vpc-cni    = {}
+    coredns                = {}
+    kube-proxy             = {}
+    vpc-cni                = {}
+    eks-pod-identity-agent = {}
   }
 
   tags = var.tags
 }
 
 # ---------------------------------------------------------------------------
-# EBS CSI driver — the managed add-on that lets PVCs provision EBS volumes
-# (Postgres and the observability stack all need PVCs). Installed as a
-# standalone aws_eks_addon (rather than inside cluster_addons) so its IRSA role
-# can reference the cluster's OIDC provider without a dependency cycle.
-# The gp3 StorageClass itself is applied via GitOps (Terraform stays AWS-only).
+# EBS CSI driver — the managed add-on that lets PVCs provision EBS volumes.
+# It uses EKS Pod Identity, so no cluster OIDC provider is required.
 # ---------------------------------------------------------------------------
+data "aws_caller_identity" "current" {}
+
 data "aws_iam_policy_document" "ebs_csi_assume" {
   statement {
     effect  = "Allow"
-    actions = ["sts:AssumeRoleWithWebIdentity"]
+    actions = ["sts:AssumeRole", "sts:TagSession"]
 
     principals {
-      type        = "Federated"
-      identifiers = [module.eks.oidc_provider_arn]
+      type        = "Service"
+      identifiers = ["pods.eks.amazonaws.com"]
     }
 
     condition {
       test     = "StringEquals"
-      variable = "${module.eks.oidc_provider}:sub"
-      values   = ["system:serviceaccount:kube-system:ebs-csi-controller-sa"]
+      variable = "aws:SourceAccount"
+      values   = [data.aws_caller_identity.current.account_id]
     }
 
     condition {
       test     = "StringEquals"
-      variable = "${module.eks.oidc_provider}:aud"
-      values   = ["sts.amazonaws.com"]
+      variable = "aws:RequestTag/kubernetes-namespace"
+      values   = ["kube-system"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestTag/kubernetes-service-account"
+      values   = ["ebs-csi-controller-sa"]
     }
   }
 }
@@ -124,13 +130,17 @@ resource "aws_iam_role_policy_attachment" "ebs_csi" {
 resource "aws_eks_addon" "ebs_csi" {
   cluster_name                = module.eks.cluster_name
   addon_name                  = "aws-ebs-csi-driver"
-  service_account_role_arn    = aws_iam_role.ebs_csi.arn
   resolve_conflicts_on_create = "OVERWRITE"
   resolve_conflicts_on_update = "OVERWRITE"
   tags                        = var.tags
 
+  pod_identity_association {
+    role_arn        = aws_iam_role.ebs_csi.arn
+    service_account = "ebs-csi-controller-sa"
+  }
+
   # Needs nodes to schedule the controller/daemonset onto.
-  depends_on = [module.eks]
+  depends_on = [module.eks, aws_iam_role_policy_attachment.ebs_csi]
 }
 
 # ---------------------------------------------------------------------------
@@ -146,23 +156,29 @@ resource "aws_iam_policy" "load_balancer_controller" {
 data "aws_iam_policy_document" "load_balancer_controller_assume" {
   statement {
     effect  = "Allow"
-    actions = ["sts:AssumeRoleWithWebIdentity"]
+    actions = ["sts:AssumeRole", "sts:TagSession"]
 
     principals {
-      type        = "Federated"
-      identifiers = [module.eks.oidc_provider_arn]
+      type        = "Service"
+      identifiers = ["pods.eks.amazonaws.com"]
     }
 
     condition {
       test     = "StringEquals"
-      variable = "${module.eks.oidc_provider}:sub"
-      values   = ["system:serviceaccount:kube-system:aws-load-balancer-controller"]
+      variable = "aws:SourceAccount"
+      values   = [data.aws_caller_identity.current.account_id]
     }
 
     condition {
       test     = "StringEquals"
-      variable = "${module.eks.oidc_provider}:aud"
-      values   = ["sts.amazonaws.com"]
+      variable = "aws:RequestTag/kubernetes-namespace"
+      values   = ["kube-system"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestTag/kubernetes-service-account"
+      values   = ["aws-load-balancer-controller"]
     }
   }
 }
@@ -176,5 +192,16 @@ resource "aws_iam_role" "load_balancer_controller" {
 resource "aws_iam_role_policy_attachment" "load_balancer_controller" {
   role       = aws_iam_role.load_balancer_controller.name
   policy_arn = aws_iam_policy.load_balancer_controller.arn
+}
+
+resource "aws_eks_pod_identity_association" "load_balancer_controller" {
+  cluster_name    = module.eks.cluster_name
+  namespace       = "kube-system"
+  role_arn        = aws_iam_role.load_balancer_controller.arn
+  service_account = "aws-load-balancer-controller"
+  tags            = var.tags
+
+  # The association requires the agent add-on and a role with permissions.
+  depends_on = [module.eks, aws_iam_role_policy_attachment.load_balancer_controller]
 }
 

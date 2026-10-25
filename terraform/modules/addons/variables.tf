@@ -13,15 +13,10 @@ variable "cluster_certificate_authority_data" {
   type        = string
 }
 
-variable "load_balancer_controller_irsa_role_arn" {
-  description = "ARN of the IRSA role for AWS Load Balancer Controller."
-  type        = string
-}
-
 variable "region" {
   description = "AWS region."
   type        = string
-  default     = "us-east-1"
+  default     = "ap-southeast-2"
 }
 
 variable "vpc_id" {

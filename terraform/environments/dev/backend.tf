@@ -6,9 +6,9 @@
 # insert until you configure and init with a real backend.
 terraform {
   backend "s3" {
-    bucket       = "ecommerce-bucket-877013879278-us-east-1-an" # create once, then set here
+    bucket       = "ecommerce-bucket-623174465382-ap-southeast-2-an" # create once, then set here
     key          = "dev/networking.tfstate"
-    region       = "us-east-1"
+    region       = "ap-southeast-2"
     use_lockfile = true
     encrypt      = true
   }

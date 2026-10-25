@@ -49,11 +49,6 @@ resource "helm_release" "aws_load_balancer_controller" {
   }
 
   set {
-    name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
-    value = var.load_balancer_controller_irsa_role_arn
-  }
-
-  set {
     name  = "region"
     value = var.region
   }

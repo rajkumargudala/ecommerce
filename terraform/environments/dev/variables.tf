@@ -1,7 +1,7 @@
 variable "region" {
   description = "AWS region."
   type        = string
-  default     = "us-east-1"
+  default     = "ap-southeast-2"
 }
 
 variable "environment" {
@@ -31,7 +31,7 @@ variable "vpc_cidr" {
 variable "azs" {
   description = "Availability zones."
   type        = list(string)
-  default     = ["us-east-1a", "us-east-1b", "us-east-1c"]
+  default     = ["ap-southeast-2a", "ap-southeast-2b", "ap-southeast-2c"]
 }
 
 variable "public_subnets" {
@@ -76,7 +76,7 @@ variable "node_max_size" {
 
 variable "node_desired_size" {
   type    = number
-  default = 3
+  default = 2
 }
 
 variable "ecr_repository_name" {

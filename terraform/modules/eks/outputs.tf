@@ -34,12 +34,12 @@ output "oidc_provider" {
 }
 
 output "ebs_csi_irsa_role_arn" {
-  description = "IRSA role ARN assumed by the EBS CSI driver controller."
+  description = "Pod Identity role ARN assumed by the EBS CSI driver controller."
   value       = aws_iam_role.ebs_csi.arn
 }
 
 output "load_balancer_controller_irsa_role_arn" {
-  description = "IRSA role ARN assumed by AWS Load Balancer Controller."
+  description = "Pod Identity role ARN assumed by AWS Load Balancer Controller."
   value       = aws_iam_role.load_balancer_controller.arn
 }
 

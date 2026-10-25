@@ -66,13 +66,16 @@ module "addons" {
 
   count = var.enable_addons ? 1 : 0
 
-  cluster_name                           = module.eks.cluster_name
-  cluster_endpoint                       = module.eks.cluster_endpoint
-  cluster_certificate_authority_data     = module.eks.cluster_certificate_authority_data
-  load_balancer_controller_irsa_role_arn = module.eks.load_balancer_controller_irsa_role_arn
-  region                                 = var.region
-  vpc_id                                 = module.vpc.vpc_id
-  enable_observability                   = var.enable_observability
+  cluster_name                       = module.eks.cluster_name
+  cluster_endpoint                   = module.eks.cluster_endpoint
+  cluster_certificate_authority_data = module.eks.cluster_certificate_authority_data
+  region                             = var.region
+  vpc_id                             = module.vpc.vpc_id
+  enable_observability               = var.enable_observability
+
+  # The add-on charts create PVCs. Wait for the EKS module, including the EBS
+  # CSI and Pod Identity managed add-ons, before installing them.
+  depends_on = [module.eks]
 }
 
 
